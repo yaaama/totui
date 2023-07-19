@@ -3,7 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+<<<<<<< HEAD
 int main(void) {
+=======
+void test_todo_create(void) {
+>>>>>>> fe37a6f (changed totui.c to main.c, can change todo status)
 
   todo_item item0 = {"Random todo thing", COMPLETE};
   todo_item item1 = {"Random todo thing2", COMPLETE};
@@ -15,9 +19,18 @@ int main(void) {
   todo_item items[5] = {item0, item1, item2, item3, item4};
 
   for (int i = 0; i < 5; i++) {
+<<<<<<< HEAD
     printf("Todo:\t%s\t|\t\tStatus? %s\n",
            items[i].heading, status_string(items[i].status));
   }
 
   return 0;
 }
+=======
+    printf("Todo:\t%s\t|\t\tStatus? %s\n", items[i].heading,
+           status_string(items[i].status));
+  }
+}
+
+int main(void) { return 0; }
+>>>>>>> fe37a6f (changed totui.c to main.c, can change todo status)
