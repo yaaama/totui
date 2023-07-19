@@ -1,0 +1,9 @@
+
+* Totui
+
+My first attempt at graphical programming in C.
+
+It is a simple terminal user interface to manage todo lists.
+
+
+* Things to do (no pun intended)
