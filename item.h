@@ -2,13 +2,11 @@
 #define ITEM_H_
 
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
-
+#include <stdlib.h>
 
 /* Enum that stores the status of the todo item */
-typedef enum {COMPLETE, PROGRESSING, NOTSTARTED} ITEM_STATUS;
-
+typedef enum { COMPLETE, PROGRESSING, NOTSTARTED } ITEM_STATUS;
 
 /* TODO */
 typedef struct {
@@ -24,7 +22,6 @@ typedef struct {
 } todo_item;
 
 void change_item_status(todo_item *item, ITEM_STATUS s);
-
 
 void print_item(todo_item *item);
 

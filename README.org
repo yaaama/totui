@@ -7,3 +7,7 @@ It is a simple terminal user interface to manage todo lists.
 
 
 * Things to do (no pun intended)
+
+** Window boundaries
+- [ ] Entering something longer than the terminal width should be checked.
+  Program should calculate how many lines the new item is occupying, and then move the cursor so that it is below the new item.
