@@ -1,14 +1,23 @@
 #include "item.h"
 #include <curses.h>
+#include <form.h>
+#include <menu.h>
 #include <ncurses.h>
+#include <panel.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
 #define PADDING_X 5
 #define PADDING_Y 3
+#define MAX_TODO_LEN 64
 
+/* Keeps a track of the current line number the user is on */
 unsigned int curr_line = PADDING_Y;
+
+/* list is 64 characters for a single todo header and 16 headers allowed max */
+char todoList[128][64];
+int currItem = 0;
 
 void todo_create(WINDOW *todoWin, char *str);
 
@@ -16,22 +25,27 @@ void print_msg(int code) {
   switch (code) {
   case 0:
     printf("Bye bye friend!\n");
+    exit(0);
+    break;
+  case 1:
+    perror("Buffer overflow. Input is too big\n");
+    exit(1);
+    break;
   }
 }
 
-void input_is_quit(char *inp) {
+void verify_input(char *inp) {
 
-  if (*inp == 'q' || *inp == 'Q') {
-    if (strlen(inp) == 1) {
+  if (strlen(inp) > MAX_TODO_LEN) {
+    print_msg(1);
+  } else if (strlen(inp) == 1) {
+
+    /* User has requested to quit */
+    if (*inp == 'q' || *inp == 'Q') {
       print_msg(0);
-      exit(0);
     }
   }
 }
-
-/* list is 64 characters for a single header and 16 headers allowed max */
-char todoList[128][64];
-int currItem = 0;
 
 void todo_create(WINDOW *todoWin, char *str) {
 
@@ -67,7 +81,7 @@ void initialise_window(void) {
   while (true) {
     wgetstr(todoWin, inp);
     clrtobot();
-    input_is_quit(inp);
+    verify_input(inp);
 
     todo_create(todoWin, inp);
 
