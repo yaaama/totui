@@ -11,10 +11,10 @@ SRCS = $(wildcard *.c)
 OBJS = $(addprefix build/,$(notdir $(SRCS:.c=.o)))
 
 # specify your compiler flags here
-CFLAGS = -Wall -ggdb -std=c11 -Wextra -pedantic -lncurses -lform -lmenu -lpanel
+CFLAGS = -Wall -ggdb -std=c11 -Wextra -pedantic -lncurses -flto=auto -ldialog -lncursesw -lm
 
 # specify your compiler
-CC = clang
+CC = gcc
 
 # default command to compile your program
 all: build/totui
