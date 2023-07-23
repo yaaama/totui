@@ -1,5 +1,7 @@
 #include "item.h"
+#include "ui.h"
 #include <assert.h>
+#include <ctype.h>
 #include <curses.h>
 #include <dialog.h>
 #include <ncurses.h>
@@ -11,9 +13,6 @@
 
 #define _GNU_SOURCE
 
-#define PADDING_X 5
-#define PADDING_Y 3
-#define MAX_TODO_LEN 64
 
 /*******************/
 /* /\* Typedef *\/ */
@@ -23,7 +22,6 @@ void new_todo_handler(void);
 void refresh_screens(void);
 void init_todo_from_file(char *file);
 void init_display_items_todo_window(void);
-
 
 typedef struct {
   char text[128];
@@ -100,12 +98,10 @@ void todo_window_loop(void) {
       new_todo_handler();
       refresh_screens();
 
-
     } else {
     }
   }
 }
-
 
 void refresh_screens(void) {
 
@@ -113,10 +109,7 @@ void refresh_screens(void) {
   wrefresh(infoWin);
   redrawwin(todoPane.window);
   redrawwin(infoWin);
-
 }
-
-
 
 void new_todo_handler(void) {
 
@@ -126,32 +119,27 @@ void new_todo_handler(void) {
   char *inp = dialog_vars.input_result;
 
   if (strlen(inp) == 0 || inp == NULL) {
-  perror("Empty input.");
-  dlg_clr_result();
-  refresh_screens();
+    perror("Empty input.");
+    dlg_clr_result();
+    refresh_screens();
 
-  return;
+    return;
   } else {
-  append_to_file("example.txt", inp);
+    append_to_file("example.txt", inp);
 
-                                /* Adds the new item to the todo items list */
-  Item t;
-  strncpy(t.text, inp, 127);
-  items.items[items.size] = t;
-  items.size ++;
+    /* Adds the new item to the todo items list */
+    Item t;
+    strncpy(t.text, inp, 127);
+    items.items[items.size] = t;
+    items.size++;
 
-  init_display_items_todo_window();
-  dlg_clr_result();
-  refresh_screens();
+    init_display_items_todo_window();
+    dlg_clr_result();
+    refresh_screens();
 
-  /* todoPane.totalCells ++; */
+    /* todoPane.totalCells ++; */
   }
-
-
 }
-
-
-
 
 void append_to_file(char *file, char *str) {
 
@@ -211,14 +199,6 @@ void init_display_items_todo_window(void) {
 /* Initialises the initial, basic user interface */
 void initialise_ui(void) {
 
-  initscr();
-  clear();
-  nonl(); /* Controls where ENTER key is drawn onto page */
-  noecho();
-  refresh();
-  curs_set(0);
-
-
   todoPane.window = newwin(LINES, COLS / 2, 0, 0);
   wborder(todoPane.window, 0, 0, 0, 0, 0, 0, 2, 0);
 
@@ -249,11 +229,64 @@ void initialise_ui(void) {
 
   wrefresh(infoWin);
   wrefresh(todoPane.window);
+}
+
+extern size_t initial_file_lines_count;
+
+/* Loads a file with a given name fn */
+Line_t **load_file(char *fn) {
+
+  FILE *fp = fopen(fn, "r");
+  /* TODO Check if filename is real */
+
+  assert(fp != NULL);
+
+  Line_t **list =
+      malloc(sizeof(Line_t *) *
+             MAX_TODO_ITEMS); /* Maximum todo is 128 items by 128 chars */
+
+  char currLine[128];
+  size_t currLen = 0;
+  size_t index = 0;
+
+  Line_t *previousLn = NULL;
+  while (fgets(currLine, MAX_TODO_LEN, fp) != NULL) {
+
+    if (!(index < MAX_TODO_ITEMS)) {
+      /* Print error to log file */
+      fclose(fp);
+      return list;
+    }
+
+    currLen = strlen(currLine);
+
+    Line_t *nl = malloc(sizeof(Line_t));
+
+    strncpy(nl->str, currLine, 127); /* Copying over string read from file */
+    // TODO Head and tail of the string (if necessary)
+    nl->length = currLen;
+    nl->previous = previousLn;
+    nl->next = NULL;
+
+    if (previousLn != NULL) {
+      previousLn->next = nl;
+    }
+
+    list[index] = nl;
+    previousLn = nl;
+
+    index++;
+  }
+
+  initial_file_lines_count = index;
 
 
-
+fclose(fp);
+return list;
 
 }
+
+
 
 int main(void) {
 
@@ -264,10 +297,6 @@ int main(void) {
   init_display_items_todo_window();
 
   todo_window_loop();
-
-
-
-
 
   system("sleep 1000");
 
