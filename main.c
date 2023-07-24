@@ -13,7 +13,6 @@
 
 #define _GNU_SOURCE
 
-
 /*******************/
 /* /\* Typedef *\/ */
 /*******************/
@@ -52,6 +51,15 @@ WINDOW *todoWin;
 Todo_Window todoPane;
 
 WINDOW *infoWin;
+
+void setup_logging(char *file) {
+
+  FILE *fptr = fopen(file, "w");
+
+  if (fptr != NULL) {
+    fclose(fptr);
+  }
+}
 
 void print_msg(int code) {
   switch (code) {
@@ -231,74 +239,78 @@ void initialise_ui(void) {
   wrefresh(todoPane.window);
 }
 
+// Stores the number of items loaded up from file
 extern size_t initial_file_lines_count;
 
-/* Loads a file with a given name fn */
+/* Loads a file with a given name @fn
+  MALLOC used */
 Line_t **load_file(char *fn) {
 
+  size_t currLen = 0;
+  size_t index = 0;
+  char currLine[128];
   FILE *fp = fopen(fn, "r");
+  Line_t list[MAX_TODO_ITEMS];
+  Line_t **retList;
+
   /* TODO Check if filename is real */
 
   assert(fp != NULL);
 
-  Line_t **list =
-      malloc(sizeof(Line_t *) *
-             MAX_TODO_ITEMS); /* Maximum todo is 128 items by 128 chars */
-
-  char currLine[128];
-  size_t currLen = 0;
-  size_t index = 0;
-
-  Line_t *previousLn = NULL;
   while (fgets(currLine, MAX_TODO_LEN, fp) != NULL) {
 
     if (!(index < MAX_TODO_ITEMS)) {
       /* Print error to log file */
       fclose(fp);
-      return list;
+      return NULL; /* TODO Handle this error properly */
     }
 
     currLen = strlen(currLine);
 
-    Line_t *nl = malloc(sizeof(Line_t));
+    Line_t nl = {0};
 
-    strncpy(nl->str, currLine, 127); /* Copying over string read from file */
-    // TODO Head and tail of the string (if necessary)
-    nl->length = currLen;
-    nl->previous = previousLn;
-    nl->next = NULL;
+    /* Copying over string read from file */
+    strncpy(nl.str, currLine, MAX_TODO_LEN);
+    nl.str[strcspn(nl.str, "\n")] = 0;
+    nl.str[currLen - 1] = '\0';
 
-    if (previousLn != NULL) {
-      previousLn->next = nl;
-    }
+    nl.length = currLen;
 
     list[index] = nl;
-    previousLn = nl;
 
     index++;
+    DEBUG("String  \"%s\" loaded from file", nl.str);
   }
 
   initial_file_lines_count = index;
 
+  /* Filling retList with the loaded data */
+  retList = malloc(sizeof(Line_t *) * index);
+  for (size_t i = 0; i < index; i++) {
+    retList[i] = malloc(sizeof(Line_t));
+    memcpy(retList[i], &list[i], sizeof(Line_t));
+  }
 
-fclose(fp);
-return list;
-
+  fclose(fp);
+  return retList;
 }
-
 
 
 int main(void) {
 
-  initialise_ui();
+  setup_logging(LOG_FILE);
 
-  init_todo_from_file("example.txt");
+  ui_init(load_file("example.txt"));
 
-  init_display_items_todo_window();
+  /* initialise_ui(); */
 
-  todo_window_loop();
+  /* init_todo_from_file("example.txt"); */
 
-  system("sleep 1000");
+  /* init_display_items_todo_window(); */
+
+  /* todo_window_loop(); */
+
+  /* system("sleep 1000"); */
 
   return 0;
 }
