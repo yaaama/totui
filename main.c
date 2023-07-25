@@ -141,13 +141,16 @@ void new_todo_handler(void) {
     items.items[items.size] = t;
     items.size++;
 
-    init_display_items_todo_window();
+    /* init_display_items_todo_window(); */
     dlg_clr_result();
     refresh_screens();
 
     /* todoPane.totalCells ++; */
   }
 }
+
+
+
 
 void append_to_file(char *file, char *str) {
 
@@ -161,90 +164,16 @@ void append_to_file(char *file, char *str) {
   fclose(fp);
 }
 
-void init_todo_from_file(char *file) {
 
-  FILE *fp = fopen(file, "r+");
-  assert(fp != NULL);
-  char currLine[128];
 
-  /* TODO Check if filename is real */
 
-  size_t index = 0;
-
-  while (fgets(currLine, MAX_TODO_LEN, fp) != NULL) {
-
-    /* Creating Item structs for each line */
-    Item todoItem;
-    strncpy(todoItem.text, currLine, 127);
-
-    items.items[index] = todoItem; /* Adding item to the global array */
-    items.size++;
-    index++;
-  }
-
-  fclose(fp);
-}
-
-/* Displaying the loaded list into the todo window */
-void init_display_items_todo_window(void) {
-
-  todoPane.totalCells = 0;
-
-  for (size_t i = 0; i < items.size; i++) {
-    wprintw(todoPane.window, "%zu [  ]  --- %s", i + 1, items.items[i].text);
-    mvwvline(todoPane.window, getcury(todoPane.window),
-             getcurx(todoPane.window) + PADDING_X, getcury(todoPane.window) + 1,
-             0);
-    todoPane.totalCells++;
-  }
-
-  todoPane.currentCellIndex =
-      1; /* You start off on the first index of the cell */
-
-  wrefresh(todoPane.window);
-}
-
-/* Initialises the initial, basic user interface */
-void initialise_ui(void) {
-
-  todoPane.window = newwin(LINES, COLS / 2, 0, 0);
-  wborder(todoPane.window, 0, 0, 0, 0, 0, 0, 2, 0);
-
-  /* todoWin = newwin(LINES, COLS / 2, 0, 0); */
-  /* wborder(todoWin, 0, 0, 0, 0, 0, 0, 2, 0); */
-  infoWin = newwin(LINES, COLS / 2, 0, COLS / 2);
-  wborder(infoWin, 0, 0, 0, 0, 0, 0, 2, 0);
-
-  /* Colours initialisation */
-  start_color();
-  init_colour_pairs();
-
-  /* Printing stuff to the top */
-  wattron(todoPane.window, A_STANDOUT);
-  wattron(todoPane.window, COLOR_PAIR(3));
-  wattron(infoWin, A_STANDOUT);
-  wattron(infoWin, COLOR_PAIR(3));
-
-  wprintw(todoPane.window, "Enter q/Q to exit.");
-  wprintw(infoWin, "Extra information");
-
-  wattroff(todoPane.window, A_STANDOUT);
-  wattroff(todoPane.window, COLOR_PAIR(3));
-  wattroff(infoWin, COLOR_PAIR(3));
-  wattroff(infoWin, A_STANDOUT);
-
-  mvwvline(todoPane.window, PADDING_Y, PADDING_X, 0, 0);
-
-  wrefresh(infoWin);
-  wrefresh(todoPane.window);
-}
-
-// Stores the number of items loaded up from file
-extern size_t initial_file_lines_count;
 
 /* Loads a file with a given name @fn
   MALLOC used */
 Line_t **load_file(char *fn) {
+
+  assert(fn != NULL);
+  /* TODO: init todo_file with name of file @fn */
 
   size_t currLen = 0;
   size_t index = 0;
@@ -260,9 +189,11 @@ Line_t **load_file(char *fn) {
   while (fgets(currLine, MAX_TODO_LEN, fp) != NULL) {
 
     if (!(index < MAX_TODO_ITEMS)) {
+      /* TODO Handle this error properly */
       /* Print error to log file */
+
       fclose(fp);
-      return NULL; /* TODO Handle this error properly */
+      return NULL;
     }
 
     currLen = strlen(currLine);
@@ -270,7 +201,7 @@ Line_t **load_file(char *fn) {
     Line_t nl = {0};
 
     /* Copying over string read from file */
-    strncpy(nl.str, currLine, MAX_TODO_LEN);
+    strncpy(nl.str, currLine, 63);
     nl.str[strcspn(nl.str, "\n")] = 0;
     nl.str[currLen - 1] = '\0';
 
@@ -282,7 +213,15 @@ Line_t **load_file(char *fn) {
     DEBUG("String  \"%s\" loaded from file", nl.str);
   }
 
-  initial_file_lines_count = index;
+  char *filename = fn;
+  /* Initialising global variables */
+  initial_lines_c = index;
+  char todo_file_name[64];
+  strncpy(todo_file_name, filename, 64 - 1);
+  todo_file_name[63] = '\0';
+
+  DEBUG("initial_file_lines_count: %zu, todo_file: %s", initial_lines_c,
+        todo_file_name);
 
   /* Filling retList with the loaded data */
   retList = malloc(sizeof(Line_t *) * index);
@@ -291,16 +230,18 @@ Line_t **load_file(char *fn) {
     memcpy(retList[i], &list[i], sizeof(Line_t));
   }
 
+  /* Closing the file */
   fclose(fp);
   return retList;
 }
-
 
 int main(void) {
 
   setup_logging(LOG_FILE);
 
-  ui_init(load_file("example.txt"));
+  Screen_t *scrn = ui_init(load_file("example.txt"));
+
+  getch();
 
   /* initialise_ui(); */
 
