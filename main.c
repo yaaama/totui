@@ -113,6 +113,8 @@ void append_to_todo_file(char *str) {
   MALLOC used */
 Line_t **load_todo_file(char *fn) {
 
+  DEBUG("Reading from file '%s'" , fn);
+
   assert(fn != NULL);
   /* TODO: init todo_file with name of file @fn */
 
@@ -151,7 +153,7 @@ Line_t **load_todo_file(char *fn) {
     list[index] = nl;
 
     index++;
-    DEBUG("String  \"%s\" loaded from file", nl.str);
+    DEBUG("Line '%s' loaded", nl.str);
   }
 
   char *filename = fn;
@@ -161,8 +163,6 @@ Line_t **load_todo_file(char *fn) {
   strncpy(todo_file_name, filename, 64 - 1);
   todo_file_name[63] = '\0';
 
-  DEBUG("initial_file_lines_count: %zu, todo_file: %s", initial_lines_c,
-        todo_file_name);
 
   /* Filling retList with the loaded data */
   retList = malloc(sizeof(Line_t *) * index);
@@ -173,6 +173,9 @@ Line_t **load_todo_file(char *fn) {
 
   /* Closing the file */
   fclose(fp);
+
+  DEBUG("---> %zu lines loaded from file '%s'", initial_lines_c,
+        todo_file_name);
   return retList;
 }
 

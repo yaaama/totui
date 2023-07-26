@@ -44,13 +44,28 @@ void ui_init_colours(void) {
   init_pair(4, COLOR_CYAN, COLOR_BLACK);
 }
 
+void hl_line(Line_t *line) {
+
+  wattron(line->ui_line, A_STANDOUT);
+  wattron(line->ui_line, A_BOLD);
+  wclear(line->ui_line);
+  wprintw(line->ui_line, "%s", line->str);
+  wattroff(line->ui_line, A_STANDOUT);
+  wattroff(line->ui_line, A_BOLD);
+
+  wrefresh(line->ui_line);
+}
+
+
 /* This will print the text on the associated WINDOW of each Line_t */
 void ui_init_lines(Line_t *line) {
 
-  DEBUG("Drawing '%s' onto the screen... ", line->str);
+  DEBUG("Drawing '%s' onto the screen.", line->str);
   wprintw(line->ui_line, "%s", line->str);
   wrefresh(line->ui_line);
 }
+
+
 
 void ui_init_screen(Screen_t *scrn, Line_t **ls) {
 
@@ -59,10 +74,12 @@ void ui_init_screen(Screen_t *scrn, Line_t **ls) {
   scrn->lines = ls;
   scrn->lines_total = 0;
 
+  DEBUG("Initialising screen...");
+
   /* Iterate through array and initialise each line */
   for (size_t i = 0; i < initial_lines_c; i++) {
 
-    DEBUG("Init started for item numb %zu, '%s'..., length: %lu", i,
+    DEBUG("Initialising item '%zu', '%s', length: '%lu'", i,
           scrn->lines[i]->str, strlen(scrn->lines[i]->str));
     size_t currRow = i + 1;
     scrn->lines[i]->ui_line =
@@ -76,8 +93,11 @@ void ui_init_screen(Screen_t *scrn, Line_t **ls) {
   }
 
   scrn->currLine = scrn->lines[scrn->lines_total - 1];
+  scrn->current_line_index = scrn->lines_total - 1;
+  hl_line(scrn->currLine);
 
-  DEBUG("Total lines initialised: %zu", scrn->lines_total);
+  DEBUG("---> Initialised %zu lines, current line is '%s', at index '%zu'.", scrn->lines_total, scrn->currLine->str, scrn->current_line_index);
+
 }
 
 Screen_t *ui_init(Line_t **lines) {
