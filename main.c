@@ -13,13 +13,9 @@
 
 #define _GNU_SOURCE
 
-/*******************/
-/* /\* Typedef *\/ */
-/*******************/
-void append_to_file(char *file, char *str);
-void new_todo_handler(void);
-void init_todo_from_file(char *file);
-void init_display_items_todo_window(void);
+char todo_file_name[64];
+
+enum KEY_EVENT { UP, DOWN, CREATE, DELETE };
 
 void setup_logging(char *file) {
 
@@ -30,19 +26,20 @@ void setup_logging(char *file) {
   }
 }
 
-void print_msg(int code) {
-  switch (code) {
-  case 0:
-    printf("Bye bye friend!\n");
-    endwin();
-    clear();
-    exit(0);
-    break;
-  case 1:
+void append_to_todo_file(char *str);
+void new_todo_handler(void);
+void init_todo_from_file(char *file);
+void init_display_items_todo_window(void);
+void handle_key_event(Screen_t *scrn, enum KEY_EVENT key);
 
-    perror("Buffer overflow. Input is too big\n");
-    endwin();
-    exit(1);
+void handle_key_event(Screen_t *scrn, enum KEY_EVENT key) {
+
+  switch (key) {
+
+  case UP:
+  case DOWN:
+  case CREATE:
+  case DELETE:
     break;
   }
 }
@@ -54,17 +51,22 @@ void todo_window_loop(Screen_t *scrn) {
   while (true) {
     key = wgetch(scrn->currLine->ui_line);
 
-    if (key == 'q' || key == 'Q') {
+    switch (key) {
+    case 'q' | 'Q': {
       /* Exit program here */
       exit(0);
+      break;
     }
-
-    if (key == 'a') {
+    case 'a': {
+      DEBUG("User wants to add a new file...");
       /* TODO Menu to ask them what to do */
-      new_todo_handler();
-                                /* Refresh screen */
-
-    } else {
+      /* new_todo_handler(); */
+      /* Refresh screen */
+      break;
+    }
+    case 'k': {
+      handle_key_event(scrn, DOWN);
+    }
     }
   }
 }
@@ -79,17 +81,17 @@ void new_todo_handler(void) {
   if (strlen(inp) == 0 || inp == NULL) {
     perror("Empty input.");
     dlg_clr_result();
-                                /* Refresh screen */
+    /* Refresh screen */
 
     return;
   } else {
-    append_to_file("example.txt", inp);
+    append_to_todo_file(inp);
 
     /* Add the new item to the todo items list */
 
     /* init_display_items_todo_window(); */
     dlg_clr_result();
-                                /* Refresh screen */
+    /* Refresh screen */
 
     /* todoPane.totalCells ++; */
   }
@@ -109,7 +111,7 @@ void append_to_todo_file(char *str) {
 
 /* Loads a file with a given name @fn
   MALLOC used */
-Line_t **load_file(char *fn) {
+Line_t **load_todo_file(char *fn) {
 
   assert(fn != NULL);
   /* TODO: init todo_file with name of file @fn */
@@ -178,10 +180,7 @@ int main(void) {
 
   setup_logging(LOG_FILE);
 
-  Screen_t *scrn = ui_init(load_file("example.txt"));
-
-  getch();
-
+  Screen_t *scrn = ui_init(load_todo_file("example.txt"));
 
   todo_window_loop(scrn);
 

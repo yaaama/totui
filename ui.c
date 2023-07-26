@@ -52,20 +52,21 @@ void ui_init_lines(Line_t *line) {
   wrefresh(line->ui_line);
 }
 
-void ui_init_screen(Screen_t *scrn , Line_t **ls) {
+void ui_init_screen(Screen_t *scrn, Line_t **ls) {
 
   /* TODO Initialise echo bar and help bar */
 
   scrn->lines = ls;
   scrn->lines_total = 0;
 
-
   /* Iterate through array and initialise each line */
   for (size_t i = 0; i < initial_lines_c; i++) {
 
-    DEBUG("Init started for item numb %zu, '%s'..., length: %lu", i, scrn->lines[i]->str, strlen(scrn->lines[i]->str));
+    DEBUG("Init started for item numb %zu, '%s'..., length: %lu", i,
+          scrn->lines[i]->str, strlen(scrn->lines[i]->str));
     size_t currRow = i + 1;
-    scrn->lines[i]->ui_line = newwin(1, COLS - PADDING_X, currRow, PADDING_X - 1);
+    scrn->lines[i]->ui_line =
+        newwin(1, COLS - PADDING_X, currRow, PADDING_X - 1);
     ui_init_lines(scrn->lines[i]);
 
     /* Testing if the string is actually there */
@@ -74,8 +75,9 @@ void ui_init_screen(Screen_t *scrn , Line_t **ls) {
     scrn->lines_total++;
   }
 
-  DEBUG("Total lines initialised: %zu", scrn->lines_total);
+  scrn->currLine = scrn->lines[scrn->lines_total - 1];
 
+  DEBUG("Total lines initialised: %zu", scrn->lines_total);
 }
 
 Screen_t *ui_init(Line_t **lines) {
@@ -95,7 +97,7 @@ Screen_t *ui_init(Line_t **lines) {
   /* curs_set(0); */
 
   Screen_t *scrn = malloc(sizeof(Screen_t));
- ui_init_screen(scrn, lines);
+  ui_init_screen(scrn, lines);
 
- return scrn;
+  return scrn;
 }
