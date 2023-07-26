@@ -18,39 +18,8 @@
 /*******************/
 void append_to_file(char *file, char *str);
 void new_todo_handler(void);
-void refresh_screens(void);
 void init_todo_from_file(char *file);
 void init_display_items_todo_window(void);
-
-typedef struct {
-  char text[128];
-} Item;
-
-typedef struct {
-  size_t size;
-  Item items[128];
-} All_Items;
-
-typedef struct {
-  bool complete;
-  bool selected;
-  Item *itemPtr;
-  size_t index;
-} Todo_Window_Cell;
-
-typedef struct {
-  WINDOW *window;
-  Todo_Window_Cell *currentCell;
-  size_t currentCellIndex;
-  size_t totalCells;
-} Todo_Window;
-
-All_Items items = {0};
-
-WINDOW *todoWin;
-Todo_Window todoPane;
-
-WINDOW *infoWin;
 
 void setup_logging(char *file) {
 
@@ -78,45 +47,26 @@ void print_msg(int code) {
   }
 }
 
-/* Defining colours */
-void init_colour_pairs(void) {
-  init_pair(1, COLOR_RED, COLOR_RED);
-  init_pair(2, COLOR_GREEN, COLOR_BLACK);
-  init_pair(3, COLOR_BLUE, COLOR_BLACK);
-  init_pair(4, COLOR_CYAN, COLOR_BLACK);
-}
-
-void todo_window_loop(void) {
+void todo_window_loop(Screen_t *scrn) {
 
   char key;
 
   while (true) {
-    key = wgetch(todoPane.window);
+    key = wgetch(scrn->currLine->ui_line);
 
     if (key == 'q' || key == 'Q') {
       /* Exit program here */
+      exit(0);
     }
-
-    /* Remove later */
-    wprintw(infoWin, "User entered %c\n", key);
-    wrefresh(infoWin);
 
     if (key == 'a') {
       /* TODO Menu to ask them what to do */
       new_todo_handler();
-      refresh_screens();
+                                /* Refresh screen */
 
     } else {
     }
   }
-}
-
-void refresh_screens(void) {
-
-  wrefresh(todoPane.window);
-  wrefresh(infoWin);
-  redrawwin(todoPane.window);
-  redrawwin(infoWin);
 }
 
 void new_todo_handler(void) {
@@ -129,32 +79,25 @@ void new_todo_handler(void) {
   if (strlen(inp) == 0 || inp == NULL) {
     perror("Empty input.");
     dlg_clr_result();
-    refresh_screens();
+                                /* Refresh screen */
 
     return;
   } else {
     append_to_file("example.txt", inp);
 
-    /* Adds the new item to the todo items list */
-    Item t;
-    strncpy(t.text, inp, 127);
-    items.items[items.size] = t;
-    items.size++;
+    /* Add the new item to the todo items list */
 
     /* init_display_items_todo_window(); */
     dlg_clr_result();
-    refresh_screens();
+                                /* Refresh screen */
 
     /* todoPane.totalCells ++; */
   }
 }
 
+void append_to_todo_file(char *str) {
 
-
-
-void append_to_file(char *file, char *str) {
-
-  FILE *fp = fopen(file, "a");
+  FILE *fp = fopen(todo_file_name, "a");
 
   assert(fp != NULL);
 
@@ -163,10 +106,6 @@ void append_to_file(char *file, char *str) {
   assert(str != NULL);
   fclose(fp);
 }
-
-
-
-
 
 /* Loads a file with a given name @fn
   MALLOC used */
@@ -243,13 +182,8 @@ int main(void) {
 
   getch();
 
-  /* initialise_ui(); */
 
-  /* init_todo_from_file("example.txt"); */
-
-  /* init_display_items_todo_window(); */
-
-  /* todo_window_loop(); */
+  todo_window_loop(scrn);
 
   /* system("sleep 1000"); */
 

@@ -31,6 +31,8 @@ typedef struct Line {
   WINDOW *ui_line; /* Each line will be rendered on a separate window */
   size_t length;   /* Length of the line */
   char str[MAX_TODO_LEN];
+  struct Line *next;
+  struct Line *previous;
 } Line_t;
 
 typedef struct Screen {
@@ -40,6 +42,7 @@ typedef struct Screen {
   WINDOW *help_bar;   /* Help bar at the top */
   Line_t **lines;     /* A list of lines (todo entries) */
   size_t lines_total; /* Total number of lines in the screen */
+  struct Line *currLine;
   size_t current_line_index;
 } Screen_t;
 
