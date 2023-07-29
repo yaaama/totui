@@ -19,10 +19,10 @@ size_t initial_lines_c;
 /**************************/
 /* /\* Initialisation *\/ */
 /**************************/
-/* void ui_init_helpbar(void); */
-/* void ui_init_line(void); */
+void ui_init_helpbar(Screen_t *scrn);
+void ui_init_line(Screen_t *scrn);
 
-const char *get_time(void) {
+const char *util_get_time(void) {
   time_t rawtime;
   struct tm *timeinfo;
   static char buffer[80];
@@ -44,18 +44,77 @@ void ui_init_colours(void) {
   init_pair(4, COLOR_CYAN, COLOR_BLACK);
 }
 
-void hl_line(Line_t *line) {
+void hl_remove(Line_t *line) {
 
-  wattron(line->ui_line, A_STANDOUT);
-  wattron(line->ui_line, A_BOLD);
+  wattroff(line->ui_line, A_STANDOUT | A_BOLD);
+  wclear(line->ui_line);
+  wprintw(line->ui_line, "%s\n", line->str);
+  wrefresh(line->ui_line);
+}
+
+void hl_add(Line_t *line) {
+
+  wattron(line->ui_line, A_STANDOUT | A_BOLD);
+  /* wattron(line->ui_line, A_BOLD); */
   wclear(line->ui_line);
   wprintw(line->ui_line, "%s", line->str);
-  wattroff(line->ui_line, A_STANDOUT);
-  wattroff(line->ui_line, A_BOLD);
+  wattroff(line->ui_line, A_STANDOUT | A_BOLD);
+  /* wattroff(line->ui_line, A_BOLD); */
 
   wrefresh(line->ui_line);
 }
 
+void ui_hl_update(Line_t *new, Line_t *old) {
+
+  assert(new &&old != NULL);
+
+  hl_remove(old);
+  hl_add(new);
+}
+
+void ui_mv_down(Screen_t *scrn) {
+
+  Line_t *new = NULL;
+    DEBUG("--> Attempting to go down.");
+    if (scrn->current_line_index >= scrn->lines_total - 1) {
+      DEBUG(
+          "Cannot move down! Trying to go to index %zu, but only %zu elements.",
+          scrn->current_line_index + 1, scrn->lines_total);
+      /* TODO Print error */
+      return;
+    }
+    DEBUG("Current line index: %zu, requesting to go DOWN, '%s'",
+          scrn->current_line_index, scrn->currLine->next->str);
+
+    new = scrn->currLine->next;
+    scrn->current_line_index++;
+
+  void* prev = scrn->currLine;
+  scrn->currLine = new;
+  ui_hl_update(scrn->currLine, prev);
+}
+
+void ui_mv_up(Screen_t *scrn) {
+
+  Line_t *new = NULL;
+
+  DEBUG("--> Attempting to go up.");
+  if (scrn->current_line_index == 0) {
+    DEBUG("Cannot move up! This is the first element.");
+    /* TODO Print error here */
+    return;
+  }
+
+  DEBUG("Current line index: %zu, requesting to go UP, '%s'",
+        scrn->current_line_index, scrn->currLine->previous->str);
+
+  new = scrn->currLine->previous;
+  scrn->current_line_index--;
+
+  void* prev = scrn->currLine;
+  scrn->currLine = new;
+  ui_hl_update(scrn->currLine, prev);
+}
 
 /* This will print the text on the associated WINDOW of each Line_t */
 void ui_init_lines(Line_t *line) {
@@ -65,39 +124,49 @@ void ui_init_lines(Line_t *line) {
   wrefresh(line->ui_line);
 }
 
-
-
 void ui_init_screen(Screen_t *scrn, Line_t **ls) {
 
   /* TODO Initialise echo bar and help bar */
 
   scrn->lines = ls;
   scrn->lines_total = 0;
+  Line_t *prev = NULL;
 
-  DEBUG("Initialising screen...");
+  DEBUG("Initialising screen %s", "...");
 
   /* Iterate through array and initialise each line */
   for (size_t i = 0; i < initial_lines_c; i++) {
 
     DEBUG("Initialising item '%zu', '%s', length: '%lu'", i,
           scrn->lines[i]->str, strlen(scrn->lines[i]->str));
+
     size_t currRow = i + 1;
+
     scrn->lines[i]->ui_line =
         newwin(1, COLS - PADDING_X, currRow, PADDING_X - 1);
+
     ui_init_lines(scrn->lines[i]);
 
     /* Testing if the string is actually there */
     assert(scrn->lines[i]->str != NULL);
 
     scrn->lines_total++;
+
+    /* Linking nodes together (doubly linked list) */
+    scrn->lines[i]->next = NULL;
+    scrn->lines[i]->previous = prev;
+    if (prev != NULL) {
+      prev->next = scrn->lines[i];
+    }
+    prev = scrn->lines[i];
   }
 
   scrn->currLine = scrn->lines[scrn->lines_total - 1];
   scrn->current_line_index = scrn->lines_total - 1;
-  hl_line(scrn->currLine);
+  hl_add(scrn->currLine);
 
-  DEBUG("---> Initialised %zu lines, current line is '%s', at index '%zu'.", scrn->lines_total, scrn->currLine->str, scrn->current_line_index);
-
+  DEBUG("---> Initialised %zu lines, current line is '%s', at index '%zu'.",
+        scrn->lines_total, scrn->currLine->str, scrn->current_line_index);
 }
 
 Screen_t *ui_init(Line_t **lines) {
@@ -112,9 +181,7 @@ Screen_t *ui_init(Line_t **lines) {
 
   /* mvcur(10, 10, 10, 30); */
   /* printw("whats up dude"); */
-  mvprintw(2, 30, "Whats up dude\n");
-  wrefresh(stdscr);
-  /* curs_set(0); */
+  curs_set(0);
 
   Screen_t *scrn = malloc(sizeof(Screen_t));
   ui_init_screen(scrn, lines);

@@ -15,31 +15,78 @@
 
 char todo_file_name[64];
 
-enum KEY_EVENT { UP, DOWN, CREATE, DELETE };
 
-void setup_logging(char *file) {
-
-  FILE *fptr = fopen(file, "w");
-
-  if (fptr != NULL) {
-    fclose(fptr);
-  }
-}
-
+void setup_logging(char *file);
 void append_to_todo_file(char *str);
 void new_todo_handler(void);
 void init_todo_from_file(char *file);
 void init_display_items_todo_window(void);
-void handle_key_event(Screen_t *scrn, enum KEY_EVENT key);
+void handle_key_event(Screen_t *scrn, char key);
 
-void handle_key_event(Screen_t *scrn, enum KEY_EVENT key) {
+void handle_movement(Screen_t *scrn, int key) {
+
+  void *new = NULL;
+
+  /* Switch */
+  switch (key) {
+
+  case UP: {
+    DEBUG("--> Attempting to go up.");
+    if (scrn->current_line_index == 0) {
+      DEBUG("Cannot move up! This is the first element.");
+      /* TODO Print error here */
+      return;
+    }
+
+    DEBUG("Current line index: %zu, requesting to go UP, '%s'",
+          scrn->current_line_index, scrn->currLine->previous->str);
+
+    new = scrn->currLine->previous;
+    scrn->current_line_index--;
+    break;
+  }
+
+  case DOWN: {
+
+    DEBUG("--> Attempting to go down.");
+    if (scrn->current_line_index >= scrn->lines_total - 1) {
+      DEBUG(
+          "Cannot move down! Trying to go to index %zu, but only %zu elements.",
+          scrn->current_line_index + 1, scrn->lines_total);
+      /* TODO Print error */
+      return;
+    }
+    DEBUG("Current line index: %zu, requesting to go DOWN, '%s'",
+          scrn->current_line_index, scrn->currLine->next->str);
+
+    new = scrn->currLine->next;
+    scrn->current_line_index++;
+    break;
+  }
+  default: {
+    DEBUG("Could not move!");
+    return;
+  }
+  }
+
+  void* prev = scrn->currLine;
+  scrn->currLine = new;
+  ui_hl_update(scrn->currLine, prev);
+}
+
+void handle_key_event(Screen_t *scrn, char key) {
 
   switch (key) {
 
-  case UP:
-  case DOWN:
-  case CREATE:
-  case DELETE:
+  case 'k':
+    handle_movement(scrn, UP);
+    break;
+  case 'j':
+    handle_movement(scrn, DOWN);
+    break;
+  case 'a':
+    break;
+  case 'd':
     break;
   }
 }
@@ -54,6 +101,7 @@ void todo_window_loop(Screen_t *scrn) {
     switch (key) {
     case 'q' | 'Q': {
       /* Exit program here */
+      DEBUG("---> User pressed '%c', quiting...", key);
       exit(0);
       break;
     }
@@ -65,13 +113,24 @@ void todo_window_loop(Screen_t *scrn) {
       break;
     }
     case 'k': {
-      handle_key_event(scrn, DOWN);
+      handle_key_event(scrn, key);
+      break;
     }
+    case 'j': {
+      handle_key_event(scrn, key);
+      break;
+    }
+    default:
+      handle_key_event(scrn, key);
+      break;
     }
   }
 }
 
+
+
 void new_todo_handler(void) {
+
 
   dialog_inputbox("New todo!", "Enter new item:", 20, 50, "", 0);
   dialog_vars.dlg_clear_screen = true;
@@ -113,7 +172,7 @@ void append_to_todo_file(char *str) {
   MALLOC used */
 Line_t **load_todo_file(char *fn) {
 
-  DEBUG("Reading from file '%s'" , fn);
+  DEBUG("Reading from file '%s'", fn);
 
   assert(fn != NULL);
   /* TODO: init todo_file with name of file @fn */
@@ -163,7 +222,6 @@ Line_t **load_todo_file(char *fn) {
   strncpy(todo_file_name, filename, 64 - 1);
   todo_file_name[63] = '\0';
 
-
   /* Filling retList with the loaded data */
   retList = malloc(sizeof(Line_t *) * index);
   for (size_t i = 0; i < index; i++) {
@@ -185,9 +243,19 @@ int main(void) {
 
   Screen_t *scrn = ui_init(load_todo_file("example.txt"));
 
+
   todo_window_loop(scrn);
 
   /* system("sleep 1000"); */
 
   return 0;
+}
+
+void setup_logging(char *file) {
+
+  FILE *fptr = fopen(file, "w");
+
+  if (fptr != NULL) {
+    fclose(fptr);
+  }
 }
