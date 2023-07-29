@@ -15,33 +15,25 @@
 
 char todo_file_name[64];
 
-
 void setup_logging(char *file);
 void append_to_todo_file(char *str);
-void new_todo_handler(void);
+void ui_new_todo(void);
 void init_todo_from_file(char *file);
 void init_display_items_todo_window(void);
 void handle_key_event(Screen_t *scrn, char key);
 
-
-void handle_key_event(Screen_t *scrn, char key) {
-
-  switch (key) {
-
-  case 'k':
-    ui_mv_up(scrn);
-    break;
-  case 'j':
-    ui_mv_down(scrn);
-    break;
-  case 'a':
-    break;
-  case 'd':
-    break;
+void nonkey_pressed(int keycode) {
+  if ((keycode & 0x1f) ==
+      keycode) { // Check if the keycode is a control character (0x1f = 31,
+                 // ASCII control character range)
+    DEBUG("'C-%c' pressed.",
+          keycode + 'a' - 1); // Convert control keycode to corresponding letter
+                              // (e.g., 3 => C-c)
+  } else {
+    DEBUG("'%c' pressed.",
+          keycode); // Print the regular character if it's not a control key
   }
 }
-
-
 
 void todo_window_loop(Screen_t *scrn) {
 
@@ -65,6 +57,11 @@ void todo_window_loop(Screen_t *scrn) {
       /* Refresh screen */
       break;
     }
+    case 'd': {
+      /* Delete todo */
+    }
+
+      /* Movement keys */
     case 'k': {
       ui_mv_up(scrn);
       break;
@@ -74,16 +71,13 @@ void todo_window_loop(Screen_t *scrn) {
       break;
     }
     default:
-      DEBUG("This key is useless!");
+      nonkey_pressed(key);
       break;
     }
   }
 }
 
-
-
-void new_todo_handler(void) {
-
+void ui_new_todo(void) {
 
   dialog_inputbox("New todo!", "Enter new item:", 20, 50, "", 0);
   dialog_vars.dlg_clear_screen = true;
@@ -91,7 +85,7 @@ void new_todo_handler(void) {
   char *inp = dialog_vars.input_result;
 
   if (strlen(inp) == 0 || inp == NULL) {
-    perror("Empty input.");
+    DEBUG("Empty input.");
     dlg_clr_result();
     /* Refresh screen */
 
@@ -195,7 +189,6 @@ int main(void) {
   setup_logging(LOG_FILE);
 
   Screen_t *scrn = ui_init(load_todo_file("example.txt"));
-
 
   todo_window_loop(scrn);
 

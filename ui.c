@@ -205,12 +205,8 @@ Screen_t *ui_init(Line_t **lines) {
   noecho();
   raw();
   curs_set(0);
-
+  keypad(stdscr, true);
   box(stdscr, 0, 0);
-  /* mvcur(0, 0, LINES + 20, 0); */
-
-  /* mvcur(10, 10, 10, 30); */
-  /* printw("whats up dude"); */
 
   Screen_t *scrn = malloc(sizeof(Screen_t));
   ui_init_screen(scrn, lines);
