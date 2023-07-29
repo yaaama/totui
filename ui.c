@@ -34,6 +34,31 @@ const char *util_get_time(void) {
   return buffer;
 }
 
+void ui_destroy(Screen_t *scrn) {
+
+  size_t winc = scrn->lines_total;
+  for (size_t i = 0 ; i < winc; i ++) {
+    WINDOW *currWin = scrn->lines[i]->ui_line;
+    delwin(currWin);
+    free(scrn->lines[i]);
+  }
+
+  delwin(scrn->main);
+  delwin(scrn->echo_bar);
+  delwin(scrn->help_bar);
+
+  free(scrn->lines);
+  free(scrn);
+
+  endwin();
+  refresh();
+  endwin();
+
+}
+
+
+
+
 void ui_init_colours(void) {
 
   start_color();
@@ -117,7 +142,9 @@ void ui_mv_up(Screen_t *scrn) {
 }
 
 /* This will print the text on the associated WINDOW of each Line_t */
-void ui_init_lines(Line_t *line) {
+void create_line(Line_t *line, size_t row) {
+
+  line->ui_line = newwin(1, COLS - PADDING_X - 1, row, PADDING_X);
 
   DEBUG("Drawing '%s' onto the screen.", line->str);
   wprintw(line->ui_line, "%s", line->str);
@@ -127,6 +154,9 @@ void ui_init_lines(Line_t *line) {
 void ui_init_screen(Screen_t *scrn, Line_t **ls) {
 
   /* TODO Initialise echo bar and help bar */
+  scrn->main = newwin(LINES, COLS, 0, 0);
+  box(scrn->main, 0, 0);
+  wrefresh(scrn->main);
 
   scrn->lines = ls;
   scrn->lines_total = 0;
@@ -142,10 +172,8 @@ void ui_init_screen(Screen_t *scrn, Line_t **ls) {
 
     size_t currRow = i + 1;
 
-    scrn->lines[i]->ui_line =
-        newwin(1, COLS - PADDING_X, currRow, PADDING_X - 1);
-
-    ui_init_lines(scrn->lines[i]);
+                                /* Creating lines */
+    create_line(scrn->lines[i], currRow);
 
     /* Testing if the string is actually there */
     assert(scrn->lines[i]->str != NULL);
@@ -175,13 +203,14 @@ Screen_t *ui_init(Line_t **lines) {
   cbreak();
   /* nonl(); /\* Controls where ENTER key is drawn onto page *\/ */
   noecho();
+  raw();
+  curs_set(0);
 
   box(stdscr, 0, 0);
   /* mvcur(0, 0, LINES + 20, 0); */
 
   /* mvcur(10, 10, 10, 30); */
   /* printw("whats up dude"); */
-  curs_set(0);
 
   Screen_t *scrn = malloc(sizeof(Screen_t));
   ui_init_screen(scrn, lines);

@@ -23,66 +23,16 @@ void init_todo_from_file(char *file);
 void init_display_items_todo_window(void);
 void handle_key_event(Screen_t *scrn, char key);
 
-void handle_movement(Screen_t *scrn, int key) {
-
-  void *new = NULL;
-
-  /* Switch */
-  switch (key) {
-
-  case UP: {
-    DEBUG("--> Attempting to go up.");
-    if (scrn->current_line_index == 0) {
-      DEBUG("Cannot move up! This is the first element.");
-      /* TODO Print error here */
-      return;
-    }
-
-    DEBUG("Current line index: %zu, requesting to go UP, '%s'",
-          scrn->current_line_index, scrn->currLine->previous->str);
-
-    new = scrn->currLine->previous;
-    scrn->current_line_index--;
-    break;
-  }
-
-  case DOWN: {
-
-    DEBUG("--> Attempting to go down.");
-    if (scrn->current_line_index >= scrn->lines_total - 1) {
-      DEBUG(
-          "Cannot move down! Trying to go to index %zu, but only %zu elements.",
-          scrn->current_line_index + 1, scrn->lines_total);
-      /* TODO Print error */
-      return;
-    }
-    DEBUG("Current line index: %zu, requesting to go DOWN, '%s'",
-          scrn->current_line_index, scrn->currLine->next->str);
-
-    new = scrn->currLine->next;
-    scrn->current_line_index++;
-    break;
-  }
-  default: {
-    DEBUG("Could not move!");
-    return;
-  }
-  }
-
-  void* prev = scrn->currLine;
-  scrn->currLine = new;
-  ui_hl_update(scrn->currLine, prev);
-}
 
 void handle_key_event(Screen_t *scrn, char key) {
 
   switch (key) {
 
   case 'k':
-    handle_movement(scrn, UP);
+    ui_mv_up(scrn);
     break;
   case 'j':
-    handle_movement(scrn, DOWN);
+    ui_mv_down(scrn);
     break;
   case 'a':
     break;
@@ -90,6 +40,8 @@ void handle_key_event(Screen_t *scrn, char key) {
     break;
   }
 }
+
+
 
 void todo_window_loop(Screen_t *scrn) {
 
@@ -102,6 +54,7 @@ void todo_window_loop(Screen_t *scrn) {
     case 'q' | 'Q': {
       /* Exit program here */
       DEBUG("---> User pressed '%c', quiting...", key);
+      ui_destroy(scrn);
       exit(0);
       break;
     }
@@ -113,15 +66,15 @@ void todo_window_loop(Screen_t *scrn) {
       break;
     }
     case 'k': {
-      handle_key_event(scrn, key);
+      ui_mv_up(scrn);
       break;
     }
     case 'j': {
-      handle_key_event(scrn, key);
+      ui_mv_down(scrn);
       break;
     }
     default:
-      handle_key_event(scrn, key);
+      DEBUG("This key is useless!");
       break;
     }
   }

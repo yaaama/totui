@@ -68,6 +68,7 @@ Screen_t *ui_init(Line_t **lines);
 void ui_hl_update(Line_t *new, Line_t *old);
 void ui_mv_up(Screen_t *scrn);
 void ui_mv_down(Screen_t *scrn);
+void ui_destroy(Screen_t *scrn);
 
 /***************************/
 /* /\* Utility methods *\/ */
