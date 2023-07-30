@@ -35,6 +35,13 @@ const char *util_get_time(void) {
   return buffer;
 }
 
+bool ui_add_item_screen(void) {
+
+  bool success = true;
+
+  return success;
+}
+
 /* Called on exit
   Will destroy all windows and free mem */
 void ui_destroy(Screen_t *scrn) {
@@ -115,46 +122,44 @@ void ui_hl_update(Line_t *new, Line_t *old) {
   hl_add(new);
 }
 
-void ui_mv_down(Screen_t *scrn) {
 
-  Line_t *new = NULL;
-  DEBUG("--> Attempting to go down.");
-  if (scrn->current_line_index >= scrn->lines_total - 1) {
-    DEBUG("Cannot move down! Trying to go to index %zu, but only %zu elements.",
-          scrn->current_line_index + 1, scrn->lines_total);
-    /* TODO Print error */
-    return;
+void ui_mv_cursor(Screen_t *scrn, MOVEMENT_TYPE_t go) {
+
+  Line_t *mvHere = NULL;
+
+  switch (go) {
+  case UP: {
+    /* Check if any elements above the current*/
+    if (scrn->current_line_index == 0) {
+      DEBUG("Cannot move up! Cursor is on the top most element -> %s",
+            scrn->currLine->item.str);
+      return;
+      break;
+    }
+
+    mvHere = scrn->currLine->previous;
+    scrn->current_line_index--;
+    break;
   }
-  DEBUG("Current line index: %zu, requesting to go DOWN, '%s'",
-        scrn->current_line_index, scrn->currLine->next->item.str);
+  case DOWN: {
+    /* Check if any elements below the current */
+    if (scrn->current_line_index >= scrn->lines_total - 1) {
+      DEBUG("Cannot move down! Cursor on bottom most element -> '%s'",
+            scrn->currLine->item.str);
+      return;
+      break;
+    }
 
-  new = scrn->currLine->next;
-  scrn->current_line_index++;
+    mvHere = scrn->currLine->next;
+    scrn->current_line_index++;
+    break;
+  }
+  }
 
   void *prev = scrn->currLine;
-  scrn->currLine = new;
-  ui_hl_update(scrn->currLine, prev);
-}
+  scrn->currLine = mvHere;
 
-void ui_mv_up(Screen_t *scrn) {
-
-  Line_t *new = NULL;
-
-  DEBUG("--> Attempting to go up.");
-  if (scrn->current_line_index == 0) {
-    DEBUG("Cannot move up! This is the first element.");
-    /* TODO Print error here */
-    return;
-  }
-
-  DEBUG("Current line index: %zu, requesting to go UP, '%s'",
-        scrn->current_line_index, scrn->currLine->previous->item.str);
-
-  new = scrn->currLine->previous;
-  scrn->current_line_index--;
-
-  void *prev = scrn->currLine;
-  scrn->currLine = new;
+  DEBUG("Cursor now at -> '%s'", scrn->currLine->item.str);
   ui_hl_update(scrn->currLine, prev);
 }
 

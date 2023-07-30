@@ -63,11 +63,11 @@ void todo_window_loop(Screen_t *scrn) {
 
       /* Movement keys */
     case 'k': {
-      ui_mv_up(scrn);
+      ui_mv_cursor(scrn, UP);
       break;
     }
     case 'j': {
-      ui_mv_down(scrn);
+      ui_mv_cursor(scrn, DOWN);
       break;
     }
     default:
