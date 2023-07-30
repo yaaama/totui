@@ -40,7 +40,7 @@ void todo_window_loop(Screen_t *scrn) {
   char key;
 
   while (true) {
-    key = wgetch(scrn->currLine->ui_line);
+    key = wgetch(scrn->currLine->window);
 
     switch (key) {
     case 'q' | 'Q': {
@@ -150,16 +150,20 @@ Line_t **load_todo_file(char *fn) {
     Line_t nl = {0};
 
     /* Copying over string read from file */
-    strncpy(nl.str, currLine, 63);
-    nl.str[strcspn(nl.str, "\n")] = 0;
-    nl.str[currLen - 1] = '\0';
+    TodoItem_t tdItem = {0};
+    strncpy(tdItem.str, currLine, 63);
+    tdItem.str[strcspn(tdItem.str, "\n")] = 0;
+    tdItem.str[currLen - 1] = '\0';
 
-    nl.length = currLen;
+
+
+    tdItem.length = currLen;
+    nl.item = tdItem;
 
     list[index] = nl;
 
     index++;
-    DEBUG("Line '%s' loaded", nl.str);
+    DEBUG("Line '%s' loaded", nl.item.str);
   }
 
   char *filename = fn;

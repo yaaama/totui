@@ -26,19 +26,30 @@
 /****************************/
 typedef enum KEY_EVENT { k, j, CREATE, DELETE } KEY_EVENT_t;
 typedef enum MOVEMENT_TYPE { UP, DOWN } MOVEMENT_TYPE_t;
+typedef enum TODO_STATUS {S_COMPLETION, S_INCOMPLETE} TODO_STATUS_t;
 
 typedef struct Dimensions {
   size_t x;
   size_t y;
 } Dimensions_t;
 
+typedef struct TodoItem {
 
-typedef struct Line {
-  WINDOW *ui_line; /* Each line will be rendered on a separate window */
   size_t length;   /* Length of the line */
   char str[MAX_TODO_LEN];
+  TODO_STATUS_t status;
+
+
+} TodoItem_t;
+
+
+typedef struct Line {
+  WINDOW *window; /* Each line will be rendered on a separate window */
+  /* size_t length;   /\* Length of the line *\/ */
+  /* char str[MAX_TODO_LEN]; */
   struct Line *next;
   struct Line *previous;
+  struct TodoItem item;
 } Line_t;
 
 typedef struct Screen {
