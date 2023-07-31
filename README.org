@@ -1,13 +1,31 @@
 
 * Totui
 
-My first attempt at graphical programming in C.
+Totui is a terminal todo list manager. The name /Totui/ derived from "*TO*do" and "*TUI*" (terminal user interface).
 
-It is a simple terminal user interface to manage todo lists.
+*Currently:*
+- Can read/write to a file containing the todo lists.
+- You can traverse the screen with vim keys.
+- Press '*q*' to quit.
+
 
 
 * Things to do (no pun intended)
 
-** Window boundaries
-- [ ] Entering something longer than the terminal width should be checked.
+** Core functionality
+
+- [x] Can traverse through todo items displayed on the screen.
+- [ ] User can add a new todo item.
+- [ ] Todo items can be deleted.
+- [ ] A split plane where the user can add more information about each todo (not limited by character counts).
+- [ ] Configuration file where the user can specify the file to store the todo items in.
+- [ ] Resize application as the window is resized.
+- [ ] Echo bar on the bottom (displays information about user actions and program processes).
+- [ ] Help bar on the top (displays q to quit, etc).
+
+
+** Aesthetics
+- [ ] A line containing something longer than the terminal width should be truncated on the screen.
   Program should calculate how many lines the new item is occupying, and then move the cursor so that it is below the new item.
+- [ ] Colour lines based on status.
+- [ ] 
