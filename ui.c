@@ -5,6 +5,20 @@
 #include <string.h>
 #include <unistd.h>
 
+/*
+ * Very simple pop-up using ncurses form and menu library (not CDK).
+ *
+ * The buttons are made from items and the fields are made from... well fields.
+ *
+ * How to run:
+ *	gcc -o test -lmenu -lform -lncurses ncurses-simple-pop-up.c -g && ./test
+ */
+
+// Depending on your OS you might need to remove 'ncurses/' from the include
+// path.
+#include <form.h>
+#include <menu.h>
+
 /* External var */
 size_t initial_lines_c;
 
@@ -33,13 +47,6 @@ const char *util_get_time(void) {
 
   strftime(buffer, 80, "%H:%M:%S", timeinfo);
   return buffer;
-}
-
-bool ui_add_item_screen(void) {
-
-  bool success = true;
-
-  return success;
 }
 
 /* Called on exit
@@ -122,13 +129,12 @@ void ui_hl_update(Line_t *new, Line_t *old) {
   hl_add(new);
 }
 
-
 void ui_mv_cursor(Screen_t *scrn, MOVEMENT_TYPE_t go) {
 
   Line_t *mvHere = NULL;
 
   switch (go) {
-  case UP: {
+  case e_mv_down: {
     /* Check if any elements above the current*/
     if (scrn->current_line_index == 0) {
       DEBUG("Cannot move up! Cursor is on the top most element -> %s",
@@ -141,7 +147,7 @@ void ui_mv_cursor(Screen_t *scrn, MOVEMENT_TYPE_t go) {
     scrn->current_line_index--;
     break;
   }
-  case DOWN: {
+  case e_move_down: {
     /* Check if any elements below the current */
     if (scrn->current_line_index >= scrn->lines_total - 1) {
       DEBUG("Cannot move down! Cursor on bottom most element -> '%s'",
@@ -163,6 +169,19 @@ void ui_mv_cursor(Screen_t *scrn, MOVEMENT_TYPE_t go) {
   ui_hl_update(scrn->currLine, prev);
 }
 
+void ui_refresh(Screen_t *scrn) {
+
+  DEBUG("Refreshing all %zu lines!", scrn->lines_total);
+
+  size_t linec = scrn->lines_total;
+  Line_t *lptr = NULL;
+
+  for (size_t i = 0; i < linec; i++) {
+    lptr = scrn->lines[i];
+    wrefresh(lptr->window);
+  }
+}
+
 /* This will print the text on the associated WINDOW of each Line_t and
   also initialise the TodoItem structure. */
 void create_line(Line_t *line, size_t row) {
@@ -174,11 +193,11 @@ void create_line(Line_t *line, size_t row) {
 
   if (ticked) {
     wattron(line->window, COLOR_PAIR(2));
-    line->item.status = S_COMPLETION;
+    line->item.status = e_status_complete;
     wprintw(line->window, "%s", line->item.str);
     wrefresh(line->window);
   } else {
-    line->item.status = S_INCOMPLETE;
+    line->item.status = e_status_incomplete;
     wprintw(line->window, "%s", line->item.str);
     wrefresh(line->window);
   }

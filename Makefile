@@ -11,7 +11,7 @@ SRCS = $(wildcard *.c)
 OBJS = $(addprefix build/,$(notdir $(SRCS:.c=.o)))
 
 # specify your compiler flags here
-CFLAGS = -Wall -g3 -O0 -std=c11 -Wextra -pedantic -lncurses -flto=auto -ldialog -lncursesw -lm
+CFLAGS = -Wall -g3 -O0 -std=c11 -Wextra -pedantic -lncurses -flto=auto -lformw -lmenuw -ldialog -lncursesw -lm
 
 # specify your compiler
 CC = gcc

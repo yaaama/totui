@@ -24,9 +24,17 @@
 /****************************/
 /* /\* Type definitions *\/ */
 /****************************/
-typedef enum KEY_EVENT { k, j, CREATE, DELETE } KEY_EVENT_t;
-typedef enum MOVEMENT_TYPE { UP, DOWN } MOVEMENT_TYPE_t;
-typedef enum TODO_STATUS {S_COMPLETION, S_INCOMPLETE} TODO_STATUS_t;
+typedef enum ACTION_TYPE {
+  e_cmd_add_item,
+  e_cmd_remove_item,
+  e_cmd_toggle_item,
+  e_cmd_move_cursor
+} ACTION_TYPE_t;
+typedef enum MOVEMENT_TYPE { e_mv_down, e_move_down } MOVEMENT_TYPE_t;
+typedef enum TODO_STATUS {
+  e_status_complete,
+  e_status_incomplete
+} TODO_STATUS_t;
 
 typedef struct Dimensions {
   size_t x;
@@ -35,18 +43,14 @@ typedef struct Dimensions {
 
 typedef struct TodoItem {
 
-  size_t length;   /* Length of the line */
+  size_t length; /* Length of the line */
   char str[MAX_TODO_LEN];
   TODO_STATUS_t status;
 
-
 } TodoItem_t;
-
 
 typedef struct Line {
   WINDOW *window; /* Each line will be rendered on a separate window */
-  /* size_t length;   /\* Length of the line *\/ */
-  /* char str[MAX_TODO_LEN]; */
   struct Line *next;
   struct Line *previous;
   struct TodoItem item;
@@ -81,6 +85,7 @@ void ui_hl_update(Line_t *new, Line_t *old);
 /* void ui_mv_down(Screen_t *scrn); */
 void ui_destroy(Screen_t *scrn);
 void ui_mv_cursor(Screen_t *scrn, MOVEMENT_TYPE_t go);
+int createForm(void);
 
 /***************************/
 /* /\* Utility methods *\/ */
