@@ -112,7 +112,7 @@ void add_new_todo(Screen_t *scrn) {
   const char *prepend = "[ ] ";
   strncat(fmt, prepend, 4); /* Inserting prepend first */
 
-  strncat(fmt, inp, MAX_TODO_LEN);
+  strncat(fmt, inp, MAX_TODO_LEN - 1);
   strncat(fmt, "\0", 2);
 
   DEBUG("Adding new todo item: '%s'", fmt);
