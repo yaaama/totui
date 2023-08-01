@@ -1,5 +1,6 @@
 #include "ui.h"
 #include <assert.h>
+#include <curses.h>
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
@@ -173,18 +174,29 @@ void ui_refresh(Screen_t *scrn) {
 
   DEBUG("Refreshing all %zu lines!", scrn->lines_total);
 
+  redrawwin(scrn->main);
+  wrefresh(scrn->main);
   size_t linec = scrn->lines_total;
-  Line_t *lptr = NULL;
 
   for (size_t i = 0; i < linec; i++) {
-    lptr = scrn->lines[i];
-    wrefresh(lptr->window);
+    redrawwin(scrn->lines[i]->window);
+    wrefresh(scrn->lines[i]->window);
   }
+}
+
+void line_append(TodoItem_t item, size_t row) {
+
+  DEBUG("Appending new line with item string: '%s'", item.str);
+  Line_t *line = malloc(sizeof(Line_t));
+
+  line->item = item;
+
+  line_render(line, row);
 }
 
 /* This will print the text on the associated WINDOW of each Line_t and
   also initialise the TodoItem structure. */
-void create_line(Line_t *line, size_t row) {
+void line_render(Line_t *line, size_t row) {
 
   line->window = newwin(1, COLS - PADDING_X - 1, row, PADDING_X);
   DEBUG("Drawing '%s' onto the screen.", line->item.str);
@@ -226,7 +238,7 @@ void ui_init_screen(Screen_t *scrn, Line_t **ls) {
     size_t currRow = i + 1;
 
     /* Creating lines */
-    create_line(scrn->lines[i], currRow);
+    line_render(scrn->lines[i], currRow);
 
     /* Testing if the string is actually there */
     assert(scrn->lines[i]->item.str != NULL);

@@ -86,6 +86,9 @@ void ui_hl_update(Line_t *new, Line_t *old);
 void ui_destroy(Screen_t *scrn);
 void ui_mv_cursor(Screen_t *scrn, MOVEMENT_TYPE_t go);
 int createForm(void);
+void ui_refresh(Screen_t *scrn);
+void line_render(Line_t *line, size_t row);
+void line_append(TodoItem_t item, size_t row);
 
 /***************************/
 /* /\* Utility methods *\/ */
