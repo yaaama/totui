@@ -30,7 +30,7 @@ typedef enum ACTION_TYPE {
   e_cmd_toggle_item,
   e_cmd_move_cursor
 } ACTION_TYPE_t;
-typedef enum MOVEMENT_TYPE { e_mv_down, e_move_down } MOVEMENT_TYPE_t;
+typedef enum MOVEMENT_TYPE { e_mv_down, e_mv_up } MOVEMENT_TYPE_t;
 typedef enum TODO_STATUS {
   e_status_complete,
   e_status_incomplete
@@ -83,10 +83,10 @@ Screen_t *ui_init(Line_t **lines);
 void ui_hl_update(Line_t *new, Line_t *old);
 /* void ui_mv_up(Screen_t *scrn); */
 /* void ui_mv_down(Screen_t *scrn); */
-void ui_destroy(Screen_t *scrn);
-void ui_mv_cursor(Screen_t *scrn, MOVEMENT_TYPE_t go);
+void ui_destroy(void);
+void ui_mv_cursor(MOVEMENT_TYPE_t go);
 int createForm(void);
-void ui_refresh(Screen_t *scrn);
+void ui_refresh(void);
 void line_render(Line_t *line, size_t row);
 void line_append(TodoItem_t item, size_t row);
 

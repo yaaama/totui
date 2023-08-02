@@ -16,13 +16,15 @@
 #define _GNU_SOURCE
 
 char todo_file_name[64];
+Screen_t *scrn;
 
 void setup_logging(char *file);
 void append_to_todo_file(char *str);
-void add_new_todo(Screen_t *scrn);
+void add_new_todo(void);
 void init_todo_from_file(char *file);
 void init_display_items_todo_window(void);
-void handle_key_event(Screen_t *scrn, char key);
+void handle_key_event(char key);
+void todo_window_loop(void);
 
 void nonkey_pressed(int keycode) {
   if ((keycode & 0x1f) ==
@@ -37,7 +39,7 @@ void nonkey_pressed(int keycode) {
   }
 }
 
-void todo_window_loop(Screen_t *scrn) {
+void todo_window_loop(void) {
 
   char key;
 
@@ -48,7 +50,7 @@ void todo_window_loop(Screen_t *scrn) {
     case 'q' | 'Q': {
       /* Exit program here */
       DEBUG("---> User pressed '%c', quiting...", key);
-      ui_destroy(scrn);
+      ui_destroy();
       exit(0);
       break;
     }
@@ -56,8 +58,8 @@ void todo_window_loop(Screen_t *scrn) {
       DEBUG("%s", "User wants to add a new todo item...");
       /* add_new_todo(scrn); */
 
-      add_new_todo(scrn);
-      ui_refresh(scrn);
+      add_new_todo();
+      ui_refresh();
 
       /* TODO Menu to ask them what to do */
       /* new_todo_handler(); */
@@ -70,11 +72,11 @@ void todo_window_loop(Screen_t *scrn) {
 
       /* Movement keys */
     case 'k': {
-      ui_mv_cursor(scrn, e_mv_down);
+      ui_mv_cursor(e_mv_up);
       break;
     }
     case 'j': {
-      ui_mv_cursor(scrn, e_move_down);
+      ui_mv_cursor(e_mv_down);
       break;
     }
     default:
@@ -84,7 +86,7 @@ void todo_window_loop(Screen_t *scrn) {
   }
 }
 
-void add_new_todo(Screen_t *scrn) {
+void add_new_todo(void) {
 
   Dimensions_t dim = {COLS / 2, LINES / 2};
 
@@ -94,6 +96,7 @@ void add_new_todo(Screen_t *scrn) {
   char *inp = dialog_vars.input_result;
   end_dialog();
 
+  DEBUG("Input received: %s", inp);
   if ((strlen(inp) == 0 || inp == NULL)) {
 
     DEBUG("Empty input.");
@@ -102,7 +105,7 @@ void add_new_todo(Screen_t *scrn) {
     dlg_clr_result();
     dlg_clear();
     refresh();
-    ui_refresh(scrn);
+    ui_refresh();
     /* Refresh screen */
     return;
   }
@@ -134,6 +137,7 @@ void add_new_todo(Screen_t *scrn) {
 
   /* Add the new item to the todo items list */
   line_append(item, scrn->lines_total + 1);
+  ui_refresh();
 
   dlg_clr_result();
 
@@ -233,9 +237,9 @@ int main(void) {
 
   setup_logging(LOG_FILE);
 
-  Screen_t *scrn = ui_init(load_todo_file("example.txt"));
+  ui_init(load_todo_file("example.txt"));
 
-  todo_window_loop(scrn);
+  todo_window_loop();
 
   return 0;
 }

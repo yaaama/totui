@@ -23,6 +23,8 @@
 /* External var */
 size_t initial_lines_c;
 
+extern Screen_t *scrn;
+
 /***************/
 /* Definitions */
 /***************/
@@ -35,8 +37,10 @@ size_t initial_lines_c;
 /* /\* Initialisation *\/ */
 /**************************/
 
-void ui_init_helpbar(Screen_t *scrn);
-void ui_init_line(Screen_t *scrn);
+void ui_init_helpbar(void);
+void ui_init_line(void);
+void ui_init_screen(Line_t **ls);
+void ui_refresh(void);
 
 const char *util_get_time(void) {
   time_t rawtime;
@@ -52,7 +56,7 @@ const char *util_get_time(void) {
 
 /* Called on exit
   Will destroy all windows and free mem */
-void ui_destroy(Screen_t *scrn) {
+void ui_destroy(void) {
 
   size_t winc = scrn->lines_total;
 
@@ -130,12 +134,12 @@ void ui_hl_update(Line_t *new, Line_t *old) {
   hl_add(new);
 }
 
-void ui_mv_cursor(Screen_t *scrn, MOVEMENT_TYPE_t go) {
+void ui_mv_cursor(MOVEMENT_TYPE_t go) {
 
   Line_t *mvHere = NULL;
 
   switch (go) {
-  case e_mv_down: {
+  case e_mv_up: {
     /* Check if any elements above the current*/
     if (scrn->current_line_index == 0) {
       DEBUG("Cannot move up! Cursor is on the top most element -> %s",
@@ -148,7 +152,7 @@ void ui_mv_cursor(Screen_t *scrn, MOVEMENT_TYPE_t go) {
     scrn->current_line_index--;
     break;
   }
-  case e_move_down: {
+  case e_mv_down: {
     /* Check if any elements below the current */
     if (scrn->current_line_index >= scrn->lines_total - 1) {
       DEBUG("Cannot move down! Cursor on bottom most element -> '%s'",
@@ -170,7 +174,7 @@ void ui_mv_cursor(Screen_t *scrn, MOVEMENT_TYPE_t go) {
   ui_hl_update(scrn->currLine, prev);
 }
 
-void ui_refresh(Screen_t *scrn) {
+void ui_refresh(void) {
 
   DEBUG("Refreshing all %zu lines!", scrn->lines_total);
 
@@ -186,12 +190,22 @@ void ui_refresh(Screen_t *scrn) {
 
 void line_append(TodoItem_t item, size_t row) {
 
-  DEBUG("Appending new line with item string: '%s'", item.str);
+  size_t insertionIndex = scrn->lines_total;
+
+  DEBUG("Appending new line with item string: '%s', str length %zu, and item "
+        "status %i",
+        item.str, item.length, item.status);
   Line_t *line = malloc(sizeof(Line_t));
 
   line->item = item;
+  line->previous = scrn->lines[insertionIndex - 1];
+  line->next = NULL;
+  scrn->lines[insertionIndex - 1]->next = line;
 
-  line_render(line, row);
+  scrn->lines[insertionIndex] = line;
+
+  line_render(line, insertionIndex + 1);
+  scrn->lines_total++;
 }
 
 /* This will print the text on the associated WINDOW of each Line_t and
@@ -215,7 +229,7 @@ void line_render(Line_t *line, size_t row) {
   }
 }
 
-void ui_init_screen(Screen_t *scrn, Line_t **ls) {
+void ui_init_screen(Line_t **ls) {
 
   /* TODO Initialise echo bar and help bar */
   scrn->main = newwin(LINES, COLS, 0, 0);
@@ -273,8 +287,8 @@ Screen_t *ui_init(Line_t **lines) {
   keypad(stdscr, true);
   box(stdscr, 0, 0);
 
-  Screen_t *scrn = malloc(sizeof(Screen_t));
-  ui_init_screen(scrn, lines);
+  scrn = malloc(sizeof(Screen_t));
+  ui_init_screen(lines);
 
   return scrn;
 }
