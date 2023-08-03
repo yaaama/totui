@@ -15,7 +15,7 @@ Totui is a terminal todo list manager. The name /Totui/ derived from "*TO*do" an
 ** Core functionality
 
 - [x] Can traverse through todo items displayed on the screen.
-- [ ] User can add a new todo item.
+- [x] User can add a new todo item.
 - [ ] Todo items can be deleted.
 - [ ] A split plane where the user can add more information about each todo (not limited by character counts).
 - [ ] Configuration file where the user can specify the file to store the todo items in.
@@ -27,9 +27,6 @@ Totui is a terminal todo list manager. The name /Totui/ derived from "*TO*do" an
 ** Aesthetics
 - [ ] A line containing something longer than the terminal width should be truncated on the screen.
   Program should calculate how many lines the new item is occupying, and then move the cursor so that it is below the new item.
-<<<<<<< HEAD
 - [ ] Lines that overflow the buffer should be rejected
-=======
 - [ ] Colour lines based on status.
 - [ ] 
->>>>>>> origin/master
