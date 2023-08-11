@@ -25,6 +25,7 @@ void init_todo_from_file(char *file);
 void init_display_items_todo_window(void);
 void handle_key_event(char key);
 void todo_window_loop(void);
+void delete_todo_item(void);
 
 void nonkey_pressed(int keycode) {
   if ((keycode & 0x1f) ==
@@ -68,6 +69,9 @@ void todo_window_loop(void) {
     }
     case 'd': {
       /* Delete todo */
+      delete_todo_item();
+      ui_refresh();
+      break;
     }
 
       /* Movement keys */
@@ -84,6 +88,22 @@ void todo_window_loop(void) {
       break;
     }
   }
+}
+
+void delete_todo_item(void) {
+
+  int yn =
+      dialog_yesno("Deleting todo item!", "Do you really want to delete this?",
+                   LINES / 2, COLS / 2);
+
+  if (yn) {
+    /* User no longer wants to delete the item */
+    return;
+  }
+
+  DEBUG("User wants to delete item '%s'", scrn->lines->current_line->item.str);
+
+  line_remove_current();
 }
 
 void add_new_todo(void) {
