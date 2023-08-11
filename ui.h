@@ -56,13 +56,22 @@ typedef struct Line {
   struct TodoItem item;
 } Line_t;
 
+typedef struct LineList {
+
+  struct Line *head;
+  struct Line *tail;
+  size_t size;
+
+} LineList_t;
+
 typedef struct Screen {
 
   WINDOW *main;
-  WINDOW *echo_bar;   /* Echos information */
-  WINDOW *help_bar;   /* Help bar at the top */
-  Line_t **lines;     /* A list of lines (todo entries) */
-  size_t lines_total; /* Total number of lines in the screen */
+  WINDOW *echo_bar; /* Echos information */
+  WINDOW *help_bar; /* Help bar at the top */
+  /* Line_t **lines;     /\* A list of lines (todo entries) *\/ */
+  LineList_t *lines;
+  /* size_t lines_total; /\* Total number of lines in the screen *\/ */
   Line_t *currLine;
   size_t current_line_index;
 } Screen_t;
