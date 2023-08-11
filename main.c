@@ -44,7 +44,7 @@ void todo_window_loop(void) {
   char key;
 
   while (true) {
-    key = wgetch(scrn->currLine->window);
+    key = wgetch(scrn->lines->current_line->window);
 
     switch (key) {
     case 'q' | 'Q': {
@@ -99,7 +99,7 @@ void add_new_todo(void) {
   DEBUG("Input received: %s", inp);
   if ((strlen(inp) == 0 || inp == NULL)) {
 
-    DEBUG("Empty input.");
+    DEBUG("%s", "Empty input.");
     endwin();
     clear();
     dlg_clr_result();
@@ -117,7 +117,7 @@ void add_new_todo(void) {
   size_t finalLen = inpLen + 6;
   DEBUG("Final formatted length is: %zu", finalLen);
   if (finalLen > MAX_TODO_LEN) {
-    DEBUG("Input string is too long!");
+    DEBUG("%s", "Input string is too long!");
   }
 
   /* Formatting the input received */
@@ -136,7 +136,7 @@ void add_new_todo(void) {
   strncpy(item.str, fmt, MAX_TODO_LEN);
 
   /* Add the new item to the todo items list */
-  line_append(item, scrn->lines_total + 1);
+  line_append(item);
   ui_refresh();
 
   dlg_clr_result();
@@ -160,76 +160,150 @@ void append_to_todo_file(char *str) {
   fclose(fp);
 }
 
-/* Loads a file with a given name @fn
+void linelist_init(LineList_t *list) {
+  list->head = NULL;
+  list->tail = NULL;
+  list->current_line = NULL;
+  list->size = 0;
+}
+
+/* Add a todo item to the end of the list */
+void linelist_add_item(LineList_t *list, char *str, TODO_STATUS_t status) {
+  Line_t *newNode = malloc(sizeof(Line_t));
+  if (!newNode)
+    return;
+
+  newNode->item.length = strlen(str);
+  strncpy(newNode->item.str, str, MAX_TODO_LEN);
+  newNode->item.status = status;
+  newNode->next = NULL;
+  newNode->previous = list->tail;
+
+  if (list->tail) {
+    list->tail->next = newNode;
+  } else {
+    list->head = newNode;
+  }
+
+  list->tail = newNode;
+  list->size++;
+}
+
+/* Delete a node from the list */
+void linelist_remove_item(LineList_t *list, Line_t *node) {
+  if (node->previous) {
+    node->previous->next = node->next;
+  } else {
+    list->head = node->next;
+  }
+
+  if (node->next) {
+    node->next->previous = node->previous;
+  } else {
+    list->tail = node->previous;
+  }
+
+  free(node);
+  list->size--;
+}
+
+/* Find a node by todo string */
+Line_t *linelist_find_item(LineList_t *list, char *str) {
+  Line_t *curr = list->head;
+  while (curr) {
+    if (strncmp(curr->item.str, str, MAX_TODO_LEN) == 0) {
+      return curr;
+    }
+    curr = curr->next;
+  }
+  return NULL;
+}
+
+/* Traverse and print the list for demonstration */
+void linelist_print(LineList_t *list) {
+  Line_t *curr = list->head;
+  while (curr) {
+    printf("Todo: %s\n", curr->item.str);
+    curr = curr->next;
+  }
+}
+
+void linelist_destroy(LineList_t *list) {
+  Line_t *curr = list->head;
+  while (curr) {
+    Line_t *next = curr->next;
+    free(curr);
+    curr = next;
+  }
+}
+
+/* Loads a file with a given name filename (fn)
+  Returns @LineList_t containing @Line_t items
+  @LineList_t initialises `size`, `head`, `tail`, `current_line`
+  Each @Line_t has its `item.str`, `item.length` initialised
   MALLOC used */
-Line_t **load_todo_file(char *fn) {
+LineList_t *load_todo_file(char *fn) {
 
   DEBUG("Reading from file '%s'", fn);
 
   strcpy(todo_file_name, fn);
-
   assert(fn != NULL && "File does not exist.");
-  /* TODO: init todo_file with name of file @fn */
 
-  size_t currLen = 0;
-  size_t index = 0;
-  char currLine[128];
   FILE *fp = fopen(fn, "r");
-  Line_t list[MAX_TODO_ITEMS];
-  Line_t **retList;
-
-  /* TODO Check if filename is real */
-
   assert(fp != NULL);
 
+  char currLine[MAX_TODO_LEN];
+  Line_t *prev = NULL;
+  LineList_t *retList = malloc(sizeof(LineList_t));
+
+  if (!retList) {
+    fclose(fp);
+    return NULL;
+  }
+
+  linelist_init(retList); // Use the function from the previous answer.
+
+  size_t index = 0;
   while (fgets(currLine, MAX_TODO_LEN, fp) != NULL) {
-
     if (!(index < MAX_TODO_ITEMS)) {
-      /* TODO Handle this error properly */
-      /* Print error to log file */
-
       fclose(fp);
+      linelist_destroy(retList); // Use the function from the previous answer.
       return NULL;
     }
 
-    currLen = strlen(currLine);
+    Line_t *nl = malloc(sizeof(Line_t));
+    if (!nl) {
+      fclose(fp);
+      linelist_destroy(retList); // Use the function from the previous answer.
+      return NULL;
+    }
 
-    Line_t nl = {0};
+    // Initialize the node
+    nl->next = NULL;
+    nl->previous = prev;
+    strncpy(nl->item.str, currLine, MAX_TODO_LEN - 1);
+    nl->item.str[strcspn(nl->item.str, "\n")] = 0; // Remove newline
+    nl->item.length = strlen(nl->item.str);
 
-    /* Copying over string read from file */
-    TodoItem_t tdItem = {0};
-    strncpy(tdItem.str, currLine, 63);
-    tdItem.str[strcspn(tdItem.str, "\n")] = 0;
-    tdItem.str[currLen - 1] = '\0';
-
-    tdItem.length = currLen;
-    nl.item = tdItem;
-
-    list[index] = nl;
-
+    // Add the node to the linked list
+    if (prev) {
+      prev->next = nl;
+    } else {
+      retList->head = nl;
+    }
+    prev = nl;
     index++;
-    DEBUG("Line '%s' loaded", nl.item.str);
+
+    DEBUG("Line '%s' loaded", nl->item.str);
   }
 
-  char *filename = fn;
-  /* Initialising global variables */
-  initial_lines_c = index;
-  char todo_file_name[64];
-  strncpy(todo_file_name, filename, 64 - 1);
-  todo_file_name[63] = '\0';
+  retList->tail = prev;
+  retList->size = index;
 
-  /* Filling retList with the loaded data */
-  retList = malloc(sizeof(Line_t *) * index);
-  for (size_t i = 0; i < index; i++) {
-    retList[i] = malloc(sizeof(Line_t));
-    memcpy(retList[i], &list[i], sizeof(Line_t));
-  }
-
-  /* Closing the file */
   fclose(fp);
 
-  DEBUG("---> %zu lines loaded from file '%s'", initial_lines_c,
-        todo_file_name);
+  DEBUG("---> %zu lines loaded from file '%s'", index, todo_file_name);
+  retList->current_line = retList->head;
   return retList;
 }
 

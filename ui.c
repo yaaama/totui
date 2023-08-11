@@ -39,7 +39,7 @@ extern Screen_t *scrn;
 
 void ui_init_helpbar(void);
 void ui_init_line(void);
-void ui_init_screen(Line_t **ls);
+void ui_init_screen(LineList_t *ls);
 void ui_refresh(void);
 
 const char *util_get_time(void) {
@@ -54,15 +54,18 @@ const char *util_get_time(void) {
   return buffer;
 }
 
+/* Free the entire list */
 /* Called on exit
   Will destroy all windows and free mem */
 void ui_destroy(void) {
 
-  size_t winc = scrn->lines_total;
+  Line_t *curr = scrn->lines->head;
 
-  for (size_t i = 0; i < winc; i++) {
-    delwin(scrn->lines[i]->window);
-    free(scrn->lines[i]);
+  while (curr) {
+    delwin(curr->window);
+    Line_t *next = curr->next;
+    free(curr);
+    curr = next;
   }
 
   delwin(scrn->main);
@@ -143,69 +146,91 @@ void ui_mv_cursor(MOVEMENT_TYPE_t go) {
     /* Check if any elements above the current*/
     if (scrn->current_line_index == 0) {
       DEBUG("Cannot move up! Cursor is on the top most element -> %s",
-            scrn->currLine->item.str);
+            scrn->lines->current_line->item.str);
       return;
       break;
     }
 
-    mvHere = scrn->currLine->previous;
+    mvHere = scrn->lines->current_line->previous;
     scrn->current_line_index--;
     break;
   }
   case e_mv_down: {
     /* Check if any elements below the current */
-    if (scrn->current_line_index >= scrn->lines_total - 1) {
+    if (scrn->current_line_index >= scrn->lines->size - 1) {
       DEBUG("Cannot move down! Cursor on bottom most element -> '%s'",
-            scrn->currLine->item.str);
+            scrn->lines->current_line->item.str);
       return;
       break;
     }
 
-    mvHere = scrn->currLine->next;
+    mvHere = scrn->lines->current_line->next;
     scrn->current_line_index++;
     break;
   }
   }
 
-  void *prev = scrn->currLine;
-  scrn->currLine = mvHere;
+  Line_t *prev = scrn->lines->current_line;
+  scrn->lines->current_line = mvHere;
 
-  DEBUG("Cursor now at -> '%s'", scrn->currLine->item.str);
-  ui_hl_update(scrn->currLine, prev);
+  DEBUG("Cursor now at -> '%s'", scrn->lines->current_line->item.str);
+  ui_hl_update(scrn->lines->current_line, prev);
 }
 
 void ui_refresh(void) {
 
-  DEBUG("Refreshing all %zu lines!", scrn->lines_total);
+  DEBUG("Refreshing all %zu lines!", scrn->lines->size);
 
   redrawwin(scrn->main);
   wrefresh(scrn->main);
-  size_t linec = scrn->lines_total;
 
-  for (size_t i = 0; i < linec; i++) {
-    redrawwin(scrn->lines[i]->window);
-    wrefresh(scrn->lines[i]->window);
+  Line_t *curr = scrn->lines->head;
+  while (curr) {
+    redrawwin(curr->window);
+    wrefresh(curr->window);
+    curr = curr->next;
   }
 }
 
-void line_append(TodoItem_t item, size_t row) {
+void line_remove_current(void) {
 
-  size_t insertionIndex = scrn->lines_total;
+  Line_t *curr = scrn->lines->current_line;
 
-  DEBUG("Appending new line with item string: '%s', str length %zu, and item "
-        "status %i",
-        item.str, item.length, item.status);
-  Line_t *line = malloc(sizeof(Line_t));
+  Line_t *newCurr = curr->next;
+  newCurr->previous = curr->previous;
+  newCurr->previous->previous = curr->next;
 
-  line->item = item;
-  line->previous = scrn->lines[insertionIndex - 1];
-  line->next = NULL;
-  scrn->lines[insertionIndex - 1]->next = line;
+  scrn->lines->current_line = newCurr;
 
-  scrn->lines[insertionIndex] = line;
+  scrn->lines->size--;
 
-  line_render(line, insertionIndex + 1);
-  scrn->lines_total++;
+  /* Free mem taken by curr */
+  delwin(curr->window);
+  free(curr);
+
+  ui_refresh();
+}
+
+void line_append(TodoItem_t item) {
+
+  LineList_t *list = scrn->lines;
+  Line_t *newLine = malloc(sizeof(Line_t));
+  if (!newLine)
+    return;
+
+  newLine->item = item;
+  newLine->next = NULL;
+  newLine->previous = list->tail;
+
+  if (list->tail) {
+    list->tail->next = newLine;
+  } else {
+    list->head = newLine;
+  }
+
+  list->tail = newLine;
+  list->size++;
+  line_render(newLine, list->size);
 }
 
 /* This will print the text on the associated WINDOW of each Line_t and
@@ -229,54 +254,39 @@ void line_render(Line_t *line, size_t row) {
   }
 }
 
-void ui_init_screen(Line_t **ls) {
+void init_lines_linked_list(LineList_t *list) {
 
+  assert(list != NULL && "This list of lines is NULL");
+
+  Line_t *curr = list->head;
+  size_t i = 0;
+  while (curr) {
+    DEBUG("Initialising item '%zu', '%s', length: '%lu'", i, curr->item.str,
+          curr->item.length);
+    line_render(curr, i + 1);
+    curr = curr->next;
+    ++i;
+  }
+  list->current_line = list->head;
+
+  scrn->lines = list;
+}
+
+void ui_init_screen(LineList_t *ls) {
+
+  DEBUG("Initialising screen %s", "...");
   /* TODO Initialise echo bar and help bar */
   scrn->main = newwin(LINES, COLS, 0, 0);
   box(scrn->main, 0, 0);
   wrefresh(scrn->main);
   ui_init_colours();
 
-  scrn->lines = ls;
-  scrn->lines_total = 0;
-  Line_t *prev = NULL;
-
-  DEBUG("Initialising screen %s", "...");
-
-  /* Iterate through array and initialise each line */
-  for (size_t i = 0; i < initial_lines_c; i++) {
-
-    DEBUG("Initialising item '%zu', '%s', length: '%lu'", i,
-          scrn->lines[i]->item.str, strlen(scrn->lines[i]->item.str));
-
-    size_t currRow = i + 1;
-
-    /* Creating lines */
-    line_render(scrn->lines[i], currRow);
-
-    /* Testing if the string is actually there */
-    assert(scrn->lines[i]->item.str != NULL);
-
-    scrn->lines_total++;
-
-    /* Linking nodes together (doubly linked list) */
-    scrn->lines[i]->next = NULL;
-    scrn->lines[i]->previous = prev;
-    if (prev != NULL) {
-      prev->next = scrn->lines[i];
-    }
-    prev = scrn->lines[i];
-  }
-
-  scrn->currLine = scrn->lines[scrn->lines_total - 1];
-  scrn->current_line_index = scrn->lines_total - 1;
-  hl_add(scrn->currLine);
-
-  DEBUG("---> Initialised %zu lines, current line is '%s', at index '%zu'.",
-        scrn->lines_total, scrn->currLine->item.str, scrn->current_line_index);
+  /* Set up lines linked list */
+  init_lines_linked_list(ls);
+  hl_add(scrn->lines->current_line);
 }
 
-Screen_t *ui_init(Line_t **lines) {
+Screen_t *ui_init(LineList_t *lines) {
 
   initscr();
   cbreak();

@@ -60,6 +60,7 @@ typedef struct LineList {
 
   struct Line *head;
   struct Line *tail;
+  struct Line *current_line;
   size_t size;
 
 } LineList_t;
@@ -69,10 +70,9 @@ typedef struct Screen {
   WINDOW *main;
   WINDOW *echo_bar; /* Echos information */
   WINDOW *help_bar; /* Help bar at the top */
-  /* Line_t **lines;     /\* A list of lines (todo entries) *\/ */
   LineList_t *lines;
   /* size_t lines_total; /\* Total number of lines in the screen *\/ */
-  Line_t *currLine;
+  /* Line_t *currLine; */
   size_t current_line_index;
 } Screen_t;
 
@@ -88,7 +88,8 @@ extern size_t initial_lines_c;
 /**************************/
 /* /\* Methods for UI *\/ */
 /**************************/
-Screen_t *ui_init(Line_t **lines);
+Screen_t *ui_init(LineList_t *ls);
+void linelist_destroy(LineList_t *list);
 void ui_hl_update(Line_t *new, Line_t *old);
 /* void ui_mv_up(Screen_t *scrn); */
 /* void ui_mv_down(Screen_t *scrn); */
@@ -97,7 +98,8 @@ void ui_mv_cursor(MOVEMENT_TYPE_t go);
 int createForm(void);
 void ui_refresh(void);
 void line_render(Line_t *line, size_t row);
-void line_append(TodoItem_t item, size_t row);
+void line_append(TodoItem_t item);
+void line_remove_current(void);
 
 /***************************/
 /* /\* Utility methods *\/ */
