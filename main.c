@@ -26,8 +26,22 @@ void init_display_items_todo_window(void);
 void handle_key_event(char key);
 void todo_window_loop(void);
 void delete_todo_item(void);
+void linelist_remove_item(LineList_t *list, Line_t *node);
+
+void print_all_todo_items(void) {
+
+  DEBUG("--> Printing all stored todo items in scrn");
+  Line_t *curr = scrn->lines->head;
+  size_t count = 0;
+  while (curr) {
+    DEBUG("%zu : %s", count, curr->item.str);
+    ++count;
+    curr = curr->next;
+  }
+}
 
 void nonkey_pressed(int keycode) {
+
   if ((keycode & 0x1f) ==
       keycode) { // Check if the keycode is a control character (0x1f = 31,
                  // ASCII control character range)
@@ -45,7 +59,13 @@ void todo_window_loop(void) {
   char key;
 
   while (true) {
-    key = wgetch(scrn->lines->current_line->window);
+    fflush(stdin);
+
+    /* if (scrn->lines->size == 0) { */
+    key = wgetch(scrn->main);
+    /* } else { */
+    /*   key = wgetch(scrn->lines->current_line->window); */
+    /* } */
 
     switch (key) {
     case 'q' | 'Q': {
@@ -57,23 +77,15 @@ void todo_window_loop(void) {
     }
     case 'a': {
       DEBUG("%s", "User wants to add a new todo item...");
-      /* add_new_todo(scrn); */
-
       add_new_todo();
-      ui_refresh();
 
-      /* TODO Menu to ask them what to do */
-      /* new_todo_handler(); */
-      /* Refresh screen */
       break;
     }
     case 'd': {
       /* Delete todo */
       delete_todo_item();
-      ui_refresh();
       break;
     }
-
       /* Movement keys */
     case 'k': {
       ui_mv_cursor(e_mv_up);
@@ -120,22 +132,22 @@ void add_new_todo(void) {
   if ((strlen(inp) == 0 || inp == NULL)) {
 
     DEBUG("%s", "Empty input.");
+    /* Clear up the screen and refresh it */
     endwin();
     clear();
     dlg_clr_result();
     dlg_clear();
     refresh();
     ui_refresh();
-    /* Refresh screen */
     return;
   }
 
-  /* Work out whether the string will actually be within the limits set out in
-   * MAX_TODO_LEN */
   size_t inpLen = strlen(inp);
   DEBUG("Input length is: %zu", inpLen);
   size_t finalLen = inpLen + 6;
   DEBUG("Final formatted length is: %zu", finalLen);
+
+  /* TODO Make this give an error message */
   if (finalLen > MAX_TODO_LEN) {
     DEBUG("%s", "Input string is too long!");
   }
@@ -157,15 +169,12 @@ void add_new_todo(void) {
 
   /* Add the new item to the todo items list */
   line_append(item);
+  line_render(scrn->lines->tail, scrn->lines->size);
   ui_refresh();
 
   dlg_clr_result();
 
   free(dialog_vars.input_result);
-
-  /* Refresh screen */
-
-  /* todoPane.totalCells ++; */
 }
 
 void append_to_todo_file(char *str) {
@@ -211,20 +220,28 @@ void linelist_add_item(LineList_t *list, char *str, TODO_STATUS_t status) {
 
 /* Delete a node from the list */
 void linelist_remove_item(LineList_t *list, Line_t *node) {
+
+  Line_t *newCurr;
+
   if (node->previous) {
     node->previous->next = node->next;
+    newCurr = node->previous;
   } else {
     list->head = node->next;
+    newCurr = node->next;
   }
 
   if (node->next) {
     node->next->previous = node->previous;
+
   } else {
     list->tail = node->previous;
   }
 
+  delwin(node->window);
   free(node);
   list->size--;
+  list->current_line = newCurr;
 }
 
 /* Find a node by todo string */
