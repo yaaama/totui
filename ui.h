@@ -84,6 +84,7 @@ typedef struct Screen {
 extern char todo_file_name[64];
 // Lines initially loaded from file
 extern size_t initial_lines_c;
+extern bool items_present;
 
 /**************************/
 /* /\* Methods for UI *\/ */
@@ -99,11 +100,14 @@ int createForm(void);
 void ui_refresh(void);
 void line_render(Line_t *line, size_t row);
 void line_append(TodoItem_t item);
-void line_remove_current(void);
+void ui_remove_line(void);
+void ui_refresh_delete(size_t delWinY);
+void ui_empty_todolist(void);
 
 /***************************/
 /* /\* Utility methods *\/ */
 /***************************/
 const char *util_get_time(void);
+bool is_scrn_empty(void);
 
 #endif // UI_H_

@@ -130,54 +130,91 @@ void hl_add(Line_t *line) {
 
 void ui_hl_update(Line_t *new, Line_t *old) {
 
-  assert(new &&old != NULL);
+  assert(new != NULL);
 
-  hl_remove(old);
+  if (old) {
+    hl_remove(old);
+  }
 
   hl_add(new);
 }
 
+/* TODO Will display a popup for the user when the window is empty */
+void ui_empty_todolist(void) {
+
+  /* box(scrn->main, LINES / 4, COLS / 4); */
+  /* wattron(scrn->main, A_BOLD | A_BLINK | A_STANDOUT | A_UNDERLINE); */
+  /* wprintw(scrn->main, */
+  /*         "There are no items in your todo list! Press 'a' to add a new
+   * one."); */
+  /* wattroff(scrn->main, A_BOLD | A_BLINK | A_STANDOUT | A_UNDERLINE); */
+
+  box(scrn->main, LINES / 4, COLS / 4);
+}
+
 void ui_mv_cursor(MOVEMENT_TYPE_t go) {
 
+  DEBUG("User wants to move!");
+
+  if (scrn->lines->size == 0) {
+    DEBUG("--> Screen empty, movement is impossible.");
+  }
+
   Line_t *mvHere = NULL;
+  Line_t *currLine = scrn->lines->current_line;
+  if (currLine == NULL) {
+    DEBUG("Curr line is null...");
+    scrn->lines->current_line = scrn->lines->head;
+  }
+  /* DEBUG("Next is %p , previous is %p", (void *)currLine->next, */
+  /*       (void *)currLine->previous); */
 
   switch (go) {
   case e_mv_up: {
     /* Check if any elements above the current*/
-    if (scrn->current_line_index == 0) {
+    if (!currLine->previous) {
       DEBUG("Cannot move up! Cursor is on the top most element -> %s",
             scrn->lines->current_line->item.str);
       return;
       break;
     }
 
-    mvHere = scrn->lines->current_line->previous;
+    mvHere = currLine->previous;
     scrn->current_line_index--;
     break;
   }
   case e_mv_down: {
     /* Check if any elements below the current */
-    if (scrn->current_line_index >= scrn->lines->size - 1) {
+    if (!currLine->next) {
       DEBUG("Cannot move down! Cursor on bottom most element -> '%s'",
             scrn->lines->current_line->item.str);
       return;
       break;
     }
 
-    mvHere = scrn->lines->current_line->next;
+    mvHere = currLine->next;
     scrn->current_line_index++;
     break;
   }
   }
 
-  Line_t *prev = scrn->lines->current_line;
+  /* Line_t *prev = scrn->lines->current_line; */
   scrn->lines->current_line = mvHere;
 
   DEBUG("Cursor now at -> '%s'", scrn->lines->current_line->item.str);
-  ui_hl_update(scrn->lines->current_line, prev);
+  ui_hl_update(scrn->lines->current_line, currLine);
 }
 
 void ui_refresh(void) {
+
+  if (scrn->lines->size == 0) {
+    DEBUG("No lines to refresh, returning...");
+    return;
+  }
+
+  if (scrn->lines->size == 1) {
+    hl_add(scrn->lines->current_line);
+  }
 
   DEBUG("Refreshing all %zu lines!", scrn->lines->size);
 
@@ -185,39 +222,58 @@ void ui_refresh(void) {
   wrefresh(scrn->main);
 
   Line_t *curr = scrn->lines->head;
+
   while (curr) {
+    DEBUG("Attempting to redraw item: %s", curr->item.str);
+
     redrawwin(curr->window);
     wrefresh(curr->window);
     curr = curr->next;
   }
 }
 
-void line_remove_current(void) {
+void ui_refresh_delete(size_t delWinY) {
 
-  Line_t *curr = scrn->lines->current_line;
+  DEBUG("--> Refreshing (after deletion) %zu lines!", scrn->lines->size);
 
-  Line_t *newCurr = curr->next;
-  newCurr->previous = curr->previous;
-  newCurr->previous->previous = curr->next;
+  redrawwin(scrn->main);
+  wrefresh(scrn->main);
+  size_t newY = delWinY;
 
-  scrn->lines->current_line = newCurr;
+  Line_t *curr = scrn->lines->head;
+  size_t currY = curr->window->_begy;
 
-  scrn->lines->size--;
+  while (curr) {
+    DEBUG("Attempting to redraw item: %s", curr->item.str);
+    if (currY >= delWinY) {
 
-  /* Free mem taken by curr */
-  delwin(curr->window);
-  free(curr);
+      line_render(curr, newY);
 
-  ui_refresh();
+      redrawwin(curr->window);
+      wrefresh(curr->window);
+      curr = curr->next;
+      newY++;
+      continue;
+    }
+
+    redrawwin(curr->window);
+    wrefresh(curr->window);
+    curr = curr->next;
+    if (curr)
+      currY = curr->window
+                  ->_begy; /* If curr is NON NULL then it will reassign the Y */
+  }
 }
 
 void line_append(TodoItem_t item) {
 
+  DEBUG("Appending new item: %s", item.str);
   LineList_t *list = scrn->lines;
   Line_t *newLine = malloc(sizeof(Line_t));
-  if (!newLine)
+  if (!newLine) {
+    DEBUG("Malloc failed...");
     return;
-
+  }
   newLine->item = item;
   newLine->next = NULL;
   newLine->previous = list->tail;
@@ -230,7 +286,10 @@ void line_append(TodoItem_t item) {
 
   list->tail = newLine;
   list->size++;
-  line_render(newLine, list->size);
+
+  if (list->size == 1) {
+    list->current_line = list->head;
+  }
 }
 
 /* This will print the text on the associated WINDOW of each Line_t and

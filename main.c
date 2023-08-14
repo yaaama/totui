@@ -115,7 +115,18 @@ void delete_todo_item(void) {
 
   DEBUG("User wants to delete item '%s'", scrn->lines->current_line->item.str);
 
-  line_remove_current();
+  size_t delY = scrn->lines->current_line->window->_begy;
+  linelist_remove_item(scrn->lines, scrn->lines->current_line);
+  scrn->current_line_index--;
+  print_all_todo_items();
+
+  if (scrn->lines->size == 0) {
+    ui_empty_todolist();
+
+    return;
+  }
+  ui_refresh_delete(delY);
+  ui_hl_update(scrn->lines->current_line, NULL);
 }
 
 void add_new_todo(void) {
