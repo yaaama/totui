@@ -4,8 +4,7 @@
 # @file
 # @version 0.1
 
-# specify your source files here
-SRCS = $(wildcard *.c)
+SRCS = $(wildcard src/*.c)
 
 # specify your object files here
 OBJS = $(addprefix build/,$(notdir $(SRCS:.c=.o)))
@@ -16,13 +15,17 @@ CFLAGS = -Wall -g3 -O0 -std=c11 -Wextra -pedantic -lncurses -flto=auto -lformw -
 # specify your compiler
 CC = gcc
 
+
+compile_commands.json:
+	bear -- make all
+
 # default command to compile your program
 all: build/totui
 
 build/totui: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
-build/%.o: %.c
+build/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # a command to clean up your build directory
@@ -32,5 +35,6 @@ clean:
 # a command to run your program
 run: build/totui
 	./build/totui
+
 
 # end

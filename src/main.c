@@ -1,4 +1,3 @@
-#include "item.h"
 #include "ui.h"
 #include <assert.h>
 #include <ctype.h>
@@ -28,6 +27,7 @@ void todo_window_loop(void);
 void delete_todo_item(void);
 void linelist_remove_item(LineList_t *list, Line_t *node);
 
+/* Prints all the strings for each todo item stored in the linked list  */
 void print_all_todo_items(void) {
 
   DEBUG("--> Printing all stored todo items in scrn");
@@ -40,6 +40,8 @@ void print_all_todo_items(void) {
   }
 }
 
+/* Figures out what sort of key has been pressed
+ * TODO Delete this */
 void nonkey_pressed(int keycode) {
 
   if ((keycode & 0x1f) ==
@@ -54,6 +56,9 @@ void nonkey_pressed(int keycode) {
   }
 }
 
+/* Main loop of the program.
+ * Listens for a key pressed and then uses a switch to match it and act
+ * appropiately. */
 void todo_window_loop(void) {
 
   char key;
@@ -102,19 +107,21 @@ void todo_window_loop(void) {
   }
 }
 
+/* Entry point for deletion
+ * Displays a dialog window and asks if user really wants to delete item */
 void delete_todo_item(void) {
 
   int yn =
       dialog_yesno("Deleting todo item!", "Do you really want to delete this?",
                    LINES / 2, COLS / 2);
 
-  if (yn) {
-    /* User no longer wants to delete the item */
+  if (yn) { /* User no longer wants to delete the item */
     return;
   }
 
   DEBUG("User wants to delete item '%s'", scrn->lines->current_line->item.str);
 
+  /* This is the Y coord of the deleted window */
   size_t delY = scrn->lines->current_line->window->_begy;
   linelist_remove_item(scrn->lines, scrn->lines->current_line);
   scrn->current_line_index--;
@@ -129,6 +136,8 @@ void delete_todo_item(void) {
   ui_hl_update(scrn->lines->current_line, NULL);
 }
 
+/* Entry point for adding a new todo item
+ * Displays a dialog window and asks what the todo item should be called */
 void add_new_todo(void) {
 
   Dimensions_t dim = {COLS / 2, LINES / 2};
@@ -188,6 +197,7 @@ void add_new_todo(void) {
   free(dialog_vars.input_result);
 }
 
+/* Opens the todo file on system and appends a new item to it */
 void append_to_todo_file(char *str) {
 
   FILE *fp = fopen(todo_file_name, "a");
@@ -200,14 +210,7 @@ void append_to_todo_file(char *str) {
   fclose(fp);
 }
 
-void linelist_init(LineList_t *list) {
-  list->head = NULL;
-  list->tail = NULL;
-  list->current_line = NULL;
-  list->size = 0;
-}
-
-/* Add a todo item to the end of the list */
+/* Add a todo item to the end of the linked list */
 void linelist_add_item(LineList_t *list, char *str, TODO_STATUS_t status) {
   Line_t *newNode = malloc(sizeof(Line_t));
   if (!newNode)
@@ -267,15 +270,11 @@ Line_t *linelist_find_item(LineList_t *list, char *str) {
   return NULL;
 }
 
-/* Traverse and print the list for demonstration */
-void linelist_print(LineList_t *list) {
-  Line_t *curr = list->head;
-  while (curr) {
-    printf("Todo: %s\n", curr->item.str);
-    curr = curr->next;
-  }
-}
-
+/* Destroys the linked list.
+ * This is only called BEFORE any of the list items have a window attached.
+ * If there is a window in the list item, then you will have to call a destroy
+ * function for the entirety of the ui (func located in the ui file somewhere,
+ * it is easy to find) */
 void linelist_destroy(LineList_t *list) {
   Line_t *curr = list->head;
   while (curr) {
@@ -309,7 +308,10 @@ LineList_t *load_todo_file(char *fn) {
     return NULL;
   }
 
-  linelist_init(retList); // Use the function from the previous answer.
+  retList->head = NULL;
+  retList->tail = NULL;
+  retList->current_line = NULL;
+  retList->size = 0;
 
   size_t index = 0;
   while (fgets(currLine, MAX_TODO_LEN, fp) != NULL) {
@@ -355,6 +357,18 @@ LineList_t *load_todo_file(char *fn) {
   return retList;
 }
 
+/* Opens/creates the file we will be outputting log messages to */
+void setup_logging(char *file) {
+
+  FILE *fptr = fopen(file, "w");
+
+  if (fptr != NULL) {
+    fclose(fptr);
+  }
+}
+
+/* Main method that drives the entire program
+  TODO Make this parse arguments at a later date */
 int main(void) {
 
   setup_logging(LOG_FILE);
@@ -364,13 +378,4 @@ int main(void) {
   todo_window_loop();
 
   return 0;
-}
-
-void setup_logging(char *file) {
-
-  FILE *fptr = fopen(file, "w");
-
-  if (fptr != NULL) {
-    fclose(fptr);
-  }
 }
