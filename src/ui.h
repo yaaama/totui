@@ -18,11 +18,16 @@
 #define MAX_TODO_LEN 128
 #define MAX_TODO_ITEMS 128
 
+#define ATTR_DONE COLOR_PAIR(2)
+#define ATTR_TODO COLOR_PAIR(1)
+#define ATTR_CURR_LINE A_BOLD | A_STANDOUT
+
 /****************************/
 /* /\* Type definitions *\/ */
 /****************************/
 
-/* Used to describe what action is being taken */
+/* Used to describe what action is being taken
+  NOTE: Not yet implemented */
 typedef enum ACTION_TYPE {
   e_cmd_add_item,
   e_cmd_remove_item,
@@ -37,6 +42,7 @@ typedef enum MOVEMENT_TYPE { e_mv_down, e_mv_up } MOVEMENT_TYPE_t;
 typedef enum TODO_STATUS {
   e_status_complete,
   e_status_incomplete
+  /* NOTE: Add more statuses later down the line. */
 } TODO_STATUS_t;
 
 /* TODO Dimensions, not yet used */

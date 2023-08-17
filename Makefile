@@ -16,7 +16,7 @@ CFLAGS = -Wall -g3 -O0 -std=c11 -Wextra -pedantic -lncurses -flto=auto -lformw -
 CC = gcc
 
 
-compile_commands.json:
+compile_commands.json: clean
 	bear -- make all
 
 # default command to compile your program
@@ -33,7 +33,7 @@ clean:
 	rm -f build/*
 
 # a command to run your program
-run: build/totui
+run: clean build/totui
 	./build/totui
 
 

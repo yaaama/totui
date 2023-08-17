@@ -47,28 +47,6 @@ void ui_destroy(void) {
   endwin();
 }
 
-/* Checks for whether a todo item string is ticked or not. */
-bool is_todo_ticked(const char *str) {
-  const char *ticked_checkbox = "[x]";
-  const char *unticked_checkbox = "[ ]";
-
-  // Check if the string contains a ticked checkbox
-  if (strstr(str, ticked_checkbox) == str) {
-    DEBUG("%s is ticked!", str);
-    return true;
-  }
-
-  // Check if the string contains a unticked checkbox
-  if (strstr(str, unticked_checkbox) == str) {
-    DEBUG("%s is not ticked.", str);
-    return false;
-  }
-
-  DEBUG("%s", "This is neither ticked nor unticked. Error!");
-  assert(false && "TODO Checkbox not found. Handle this.");
-  return false;
-}
-
 /* Will set the colours for ncurses to use
  * TODO I should probably customise these when I have the time. */
 void ui_init_colours(void) {
@@ -84,18 +62,19 @@ void ui_init_colours(void) {
 /* Removes highlighting from line. */
 void hl_remove(Line_t *line) {
   // TODO Turn the default highlighting into a macro
-  wattroff(line->window, A_STANDOUT | A_BOLD);
+  wattroff(line->window, ATTR_CURR_LINE);
   wclear(line->window);
   wprintw(line->window, "%s\n", line->item.str);
   wrefresh(line->window);
 }
+
 /* Adds highlighting to a line. */
 void hl_add(Line_t *line) {
-  wattron(line->window, A_STANDOUT | A_BOLD);
+  wattron(line->window, ATTR_CURR_LINE);
   wclear(line->window);
   wprintw(line->window, "%s", line->item.str);
   wrefresh(line->window);
-  wattroff(line->window, A_STANDOUT | A_BOLD);
+  wattroff(line->window, ATTR_CURR_LINE);
 }
 
 /* Will update the highlighting by removing the highlight from an old
@@ -106,6 +85,7 @@ void ui_hl_update(Line_t *new, Line_t *old) {
 
   assert(new != NULL);
 
+  /* If there is a cursor to remove highlighting from... */
   if (old) {
     hl_remove(old);
   }
@@ -206,7 +186,8 @@ void ui_refresh(void) {
   Line_t *curr = scrn->lines->head;
 
   while (curr) {
-    DEBUG("Attempting to redraw item: %s", curr->item.str);
+    /* DEBUG("Attempting to redraw item: %s", curr->item.str); */
+    DEBUG("%s", "Refreshing UI...");
     redrawwin(curr->window);
     wrefresh(curr->window);
     curr = curr->next;
