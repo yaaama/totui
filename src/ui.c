@@ -4,45 +4,22 @@
 
 /* My header files */
 #include "ui.h"
-/* Standard C libs */
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-/* Curse libs */
-#include <curses.h>
-#include <form.h>
-#include <menu.h>
-#include <ncurses.h>
+#include "util.h"
 
 /**************************/
 /* /\* Global Variables *\/ */
 /**************************/
 
-/* Number of todo items the program initially loads up */
-size_t initial_lines_c;
 /* Where all of the UI information + todos are stored */
 extern Screen_t *scrn;
 
 /***************/
 /* Functions */
 /***************/
-void ui_init_helpbar(void);
-void ui_init_line(void);
+void ui_init_helpbar(void); /* TODO */
+void ui_init_line(void);    /* TODO */
 void init_main_screen(void);
 void ui_refresh(void);
-
-/* Returns local time, used for debugging
- TODO Move this into a new file */
-const char *util_get_time(void) {
-  time_t rawtime;
-  struct tm *timeinfo;
-  static char buffer[80];
-  time(&rawtime);
-  timeinfo = localtime(&rawtime);
-  strftime(buffer, 80, "%H:%M:%S", timeinfo);
-  return buffer;
-}
 
 /* Frees mem from the entire list and destroys the UI.
  * Called on exit */
@@ -53,6 +30,7 @@ void ui_destroy(void) {
   while (curr) {
     delwin(curr->window);
     Line_t *next = curr->next;
+    /* free(curr->item); */
     free(curr);
     curr = next;
   }
@@ -275,16 +253,16 @@ void ui_refresh_delete(size_t delWinY) {
  * This function should be self explanatory. Give an TodoItem_t and it will
  * malloc a new Line_t and add it to the linked list. Note that the function
  * does not render a new window for it. */
-void line_append(TodoItem_t item) {
+void line_list_add_new_item(TodoItem_t *const item) {
 
-  DEBUG("Appending new item: %s", item.str);
+  DEBUG("Appending new item: %s", item->str);
   LineList_t *list = scrn->lines;
   Line_t *newLine = malloc(sizeof(Line_t));
   if (!newLine) {
     DEBUG("Malloc failed...");
     return;
   }
-  newLine->item = item;
+  newLine->item = *item;
   newLine->next = NULL;
   newLine->previous = list->tail;
 
@@ -334,7 +312,7 @@ void render_all_lines(LineList_t *list) {
   Line_t *curr = list->head;
   size_t i = 0;
   while (curr) {
-    DEBUG("Initialising item '%zu', '%s', length: '%lu'", i, curr->item.str,
+    DEBUG("Initialising item '%zu', '%s', length: '%zu'", i, curr->item.str,
           curr->item.length);
     line_render(curr, i + 1);
     curr = curr->next;
@@ -354,6 +332,21 @@ void init_main_screen(void) {
   box(scrn->main, 0, 0);
   wrefresh(scrn->main);
   ui_init_colours();
+}
+
+bool scrn_lines_empty(void) {
+
+  DEBUG("%s", "Testing if scrn->lines is empty.");
+
+  if (scrn->lines->size == 0) {
+    DEBUG("%s", "scrn->lines->size = 0.");
+    return true;
+  }
+  if (scrn->lines->head == NULL) {
+    DEBUG("%s", "scrn->lines->head is NULL.");
+    return true;
+  }
+  return false;
 }
 
 /* Called when the program starts

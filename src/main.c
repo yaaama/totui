@@ -1,24 +1,9 @@
 #include "ui.h"
-#include <assert.h>
-#include <ctype.h>
-#include <curses.h>
-#include <dialog.h>
-#include <form.h>
-#include <menu.h>
-#include <ncurses.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
+#include "util.h"
 
-#define _GNU_SOURCE
-
-char todo_file_name[64];
-Screen_t *scrn;
-
-void setup_logging(char *file);
-void append_to_todo_file(char *str);
+/*********************************/
+/* /\* Function declarations *\/ */
+/*********************************/
 void add_new_todo(void);
 void init_todo_from_file(char *file);
 void init_display_items_todo_window(void);
@@ -27,50 +12,18 @@ void todo_window_loop(void);
 void delete_todo_item(void);
 void linelist_remove_item(LineList_t *list, Line_t *node);
 
-/* Prints all the strings for each todo item stored in the linked list  */
-void print_all_todo_items(void) {
-
-  DEBUG("--> Printing all stored todo items in scrn");
-  Line_t *curr = scrn->lines->head;
-  size_t count = 0;
-  while (curr) {
-    DEBUG("%zu : %s", count, curr->item.str);
-    ++count;
-    curr = curr->next;
-  }
-}
-
-/* Figures out what sort of key has been pressed
- * TODO Delete this */
-void nonkey_pressed(int keycode) {
-
-  if ((keycode & 0x1f) ==
-      keycode) { // Check if the keycode is a control character (0x1f = 31,
-                 // ASCII control character range)
-    DEBUG("'C-%c' pressed.",
-          keycode + 'a' - 1); // Convert control keycode to corresponding letter
-                              // (e.g., 3 => C-c)
-  } else {
-    DEBUG("'%c' pressed.",
-          keycode); // Print the regular character if it's not a control key
-  }
-}
+Screen_t *scrn; /* Global scrn var initialised in ui.c */
+char *todo_file_name;
 
 /* Main loop of the program.
  * Listens for a key pressed and then uses a switch to match it and act
  * appropiately. */
 void todo_window_loop(void) {
 
-  char key;
-
   while (true) {
     fflush(stdin);
 
-    /* if (scrn->lines->size == 0) { */
-    key = wgetch(scrn->main);
-    /* } else { */
-    /*   key = wgetch(scrn->lines->current_line->window); */
-    /* } */
+    char key = wgetch(scrn->main);
 
     switch (key) {
     case 'q' | 'Q': {
@@ -101,7 +54,8 @@ void todo_window_loop(void) {
       break;
     }
     default:
-      nonkey_pressed(key);
+      /* TODO Handle when a non recognised key is pressed
+       * nonkey_pressed(key); */
       break;
     }
   }
@@ -125,11 +79,11 @@ void delete_todo_item(void) {
   size_t delY = scrn->lines->current_line->window->_begy;
   linelist_remove_item(scrn->lines, scrn->lines->current_line);
   scrn->current_line_index--;
-  print_all_todo_items();
+  print_all_todo_items(scrn->lines);
 
-  if (scrn->lines->size == 0) {
-    ui_empty_todolist();
-
+  if (scrn_lines_empty()) {
+    /* TODO Handle what happens when the screen is empty */
+    /* ui_empty_todolist(); */
     return;
   }
   ui_refresh_delete(delY);
@@ -149,9 +103,9 @@ void add_new_todo(void) {
   end_dialog();
 
   DEBUG("Input received: %s", inp);
-  if ((strlen(inp) == 0 || inp == NULL)) {
+  if ((strlen(inp) == 0)) {
 
-    DEBUG("%s", "Empty input.");
+    DEBUG("%s", "Empty input received.");
     /* Clear up the screen and refresh it */
     endwin();
     clear();
@@ -173,41 +127,29 @@ void add_new_todo(void) {
   }
 
   /* Formatting the input received */
-  char *fmt = calloc(MAX_TODO_LEN, sizeof(char));
+  char *fmtedStr = calloc(MAX_TODO_LEN, sizeof(char));
   const char *prepend = "[ ] ";
-  strncat(fmt, prepend, 4); /* Inserting prepend first */
-  strncat(fmt, inp, MAX_TODO_LEN - 1);
-  strncat(fmt, "\0", 2);
+  strncat(fmtedStr, prepend, 4); /* Inserting prepend first */
+  strncat(fmtedStr, inp, MAX_TODO_LEN - 1);
+  strncat(fmtedStr, "\0", 2);
 
-  DEBUG("Adding new todo item: '%s'", fmt);
-  append_to_todo_file(fmt);
+  DEBUG("Adding new todo item: '%s'", fmtedStr);
+  append_to_file(todo_file_name, fmtedStr);
 
-  TodoItem_t item;
-  item.length = strlen(fmt);
-  item.status = e_status_incomplete;
-  strncpy(item.str, fmt, MAX_TODO_LEN);
+  TodoItem_t *item = malloc(sizeof(TodoItem_t));
+  item->length = strlen(fmtedStr);
+  item->status = e_status_incomplete;
+  strncpy(item->str, fmtedStr, MAX_TODO_LEN);
 
   /* Add the new item to the todo items list */
-  line_append(item);
+  line_list_add_new_item(item);
+  /* Render this new line */
   line_render(scrn->lines->tail, scrn->lines->size);
   ui_refresh();
 
   dlg_clr_result();
 
   free(dialog_vars.input_result);
-}
-
-/* Opens the todo file on system and appends a new item to it */
-void append_to_todo_file(char *str) {
-
-  FILE *fp = fopen(todo_file_name, "a");
-
-  assert(fp != NULL);
-
-  fprintf(fp, "%s\n", str);
-
-  assert(str != NULL);
-  fclose(fp);
 }
 
 /* Add a todo item to the end of the linked list */
@@ -284,94 +226,11 @@ void linelist_destroy(LineList_t *list) {
   }
 }
 
-/* Loads a file with a given name filename (fn)
-  Returns @LineList_t containing @Line_t items
-  @LineList_t initialises `size`, `head`, `tail`, `current_line`
-  Each @Line_t has its `item.str`, `item.length` initialised
-  MALLOC used */
-LineList_t *load_todo_file(char *fn) {
-
-  DEBUG("Reading from file '%s'", fn);
-
-  strcpy(todo_file_name, fn);
-  assert(fn != NULL && "File does not exist.");
-
-  FILE *fp = fopen(fn, "r");
-  assert(fp != NULL);
-
-  char currLine[MAX_TODO_LEN];
-  Line_t *prev = NULL;
-  LineList_t *retList = malloc(sizeof(LineList_t));
-
-  if (!retList) {
-    fclose(fp);
-    return NULL;
-  }
-
-  retList->head = NULL;
-  retList->tail = NULL;
-  retList->current_line = NULL;
-  retList->size = 0;
-
-  size_t index = 0;
-  while (fgets(currLine, MAX_TODO_LEN, fp) != NULL) {
-    if (!(index < MAX_TODO_ITEMS)) {
-      fclose(fp);
-      linelist_destroy(retList); // Use the function from the previous answer.
-      return NULL;
-    }
-
-    Line_t *nl = malloc(sizeof(Line_t));
-    if (!nl) {
-      fclose(fp);
-      linelist_destroy(retList); // Use the function from the previous answer.
-      return NULL;
-    }
-
-    // Initialize the node
-    nl->next = NULL;
-    nl->previous = prev;
-    strncpy(nl->item.str, currLine, MAX_TODO_LEN - 1);
-    nl->item.str[strcspn(nl->item.str, "\n")] = 0; // Remove newline
-    nl->item.length = strlen(nl->item.str);
-
-    // Add the node to the linked list
-    if (prev) {
-      prev->next = nl;
-    } else {
-      retList->head = nl;
-    }
-    prev = nl;
-    index++;
-
-    DEBUG("Line '%s' loaded", nl->item.str);
-  }
-
-  retList->tail = prev;
-  retList->size = index;
-
-  fclose(fp);
-
-  DEBUG("---> %zu lines loaded from file '%s'", index, todo_file_name);
-  retList->current_line = retList->head;
-  return retList;
-}
-
-/* Opens/creates the file we will be outputting log messages to */
-void setup_logging(char *file) {
-
-  FILE *fptr = fopen(file, "w");
-
-  if (fptr != NULL) {
-    fclose(fptr);
-  }
-}
-
 /* Main method that drives the entire program
   TODO Make this parse arguments at a later date */
 int main(void) {
 
-  setup_logging(LOG_FILE);
+  setup_log_file(LOG_FILE);
 
   ui_init(load_todo_file("example.txt"));
 
