@@ -289,14 +289,15 @@ void line_render(Line_t *line, size_t row) {
   line->window = newwin(1, COLS - PADDING_X - 1, row, PADDING_X);
   DEBUG("Drawing '%s' onto the screen.", line->item.str);
 
-  bool ticked = is_todo_ticked(line->item.str);
-
-  if (ticked) {
-    wattron(line->window, COLOR_PAIR(2));
+  /* Check status value of each item and apply attributes accordingly */
+  if (line->item.status == e_status_complete) {
+    wattron(line->window, ATTR_DONE);
     line->item.status = e_status_complete;
     wprintw(line->window, "%s", line->item.str);
     wrefresh(line->window);
-  } else {
+  } else if (line->item.status == e_status_incomplete) {
+    /* NOTE: We can add highlighting here if we want to later on. */
+    /* wattron(line->window, ATTR_TODO); */
     line->item.status = e_status_incomplete;
     wprintw(line->window, "%s", line->item.str);
     wrefresh(line->window);

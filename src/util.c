@@ -6,6 +6,7 @@
 const char *get_local_time(void);
 void print_all_todo_items(LineList_t *line_list);
 void append_to_file(char *filename, char *str);
+char *strip_string(char *str);
 
 /************************************/
 /* /\* Function implementations *\/ */
@@ -95,25 +96,36 @@ LineList_t *load_todo_file(char *fn) {
   retList->size = 0;
 
   size_t index = 0;
+
+  /* Reading the file now... */
   while (fgets(currLine, MAX_TODO_LEN, fp) != NULL) {
+
     if (!(index < MAX_TODO_ITEMS)) {
       fclose(fp);
-      linelist_destroy(retList); // Use the function from the previous answer.
+      linelist_destroy(retList); /* Destroys the linked list structure */
       return NULL;
     }
 
     Line_t *nl = malloc(sizeof(Line_t));
     if (!nl) {
       fclose(fp);
-      linelist_destroy(retList); // Use the function from the previous answer.
+      DEBUG("Error allocating a line. %s", "Returning NULL.");
+      linelist_destroy(retList);
       return NULL;
     }
 
-    // Initialize the node
+    // Initialize the Line node
     nl->next = NULL;
     nl->previous = prev;
-    strncpy(nl->item.str, currLine, MAX_TODO_LEN - 1);
-    nl->item.str[strcspn(nl->item.str, "\n")] = 0; // Remove newline
+
+    /* REVIEW This may cause some problems later on... */
+    char *fmtCurrLine = strip_string(currLine);
+
+    TODO_STATUS_t status = parse_todo_status(fmtCurrLine);
+    nl->item.status = status; /* Setting the status */
+
+    strncpy(nl->item.str, fmtCurrLine, MAX_TODO_LEN - 1); /* Sets the raw str */
+
     nl->item.length = strlen(nl->item.str);
 
     // Add the node to the linked list
@@ -136,6 +148,55 @@ LineList_t *load_todo_file(char *fn) {
   DEBUG("---> %zu lines loaded from file '%s'", index, todo_file_name);
   retList->current_line = retList->head;
   return retList;
+}
+
+/* Taken from stack overflow:
+ * https://stackoverflow.com/questions/352055/best-algorithm-to-strip-leading-and-trailing-spaces-in-c?noredirect=1&lq=1
+ */
+char *strip_string(char *s) {
+  size_t size;
+  char *end;
+
+  size = strlen(s);
+
+  if (!size)
+    return s;
+
+  end = s + size - 1;
+  while (end >= s && isspace(*end))
+    end--;
+  *(end + 1) = '\0';
+
+  while (*s && isspace(*s))
+    s++;
+
+  return s;
+}
+
+void format_current_line(char *str) {
+
+  while (isspace(*str)) {
+  }
+}
+
+/* Takes a string and determines if the line is done or not */
+TODO_STATUS_t parse_todo_status(char *str) {
+
+  DEBUG("%s %s", "---> Parsing the todo status of line:", str);
+  /* List of things to look for */
+  const char *done = ":DONE:";
+  const char *todo = ":TODO:";
+  /* char *done = ":DONE:"; */
+
+  if (strstr(str, done)) {
+    return e_status_complete;
+  } else if (strstr(str, todo)) {
+    return e_status_incomplete;
+  }
+
+  assert(false && "TODO Checkbox not found. Handle this.");
+
+  return e_status_incomplete;
 }
 
 /* Prints all the strings for each todo item stored in the linked list  */

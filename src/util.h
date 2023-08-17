@@ -54,5 +54,6 @@ void append_to_file(char *filename,
 void print_all_todo_items(
     LineList_t
         *line_list); /* Prints all of the todo items stored in the LineList */
+TODO_STATUS_t parse_todo_status(char *str);
 
 #endif // UTIL_H_
