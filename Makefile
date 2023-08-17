@@ -15,11 +15,7 @@ CFLAGS = -Wall -g3 -O0 -std=c11 -Wextra -pedantic -lncurses -flto=auto -lformw -
 # specify your compiler
 CC = gcc
 
-
-compile_commands.json: clean
-	bear -- make all
-
-# default command to compile your program
+# default target
 all: build/totui
 
 build/totui: $(OBJS)
@@ -28,13 +24,16 @@ build/totui: $(OBJS)
 build/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# a command to clean up your build directory
+# a target to clean up your build directory
 clean:
 	rm -f build/*
 
-# a command to run your program
-run: clean build/totui
+# a target to build the program
+build: clean
+	bear -- make all
+
+# a target to run your program
+run: build/totui
 	./build/totui
 
-
-# end
+#end

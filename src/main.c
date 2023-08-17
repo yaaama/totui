@@ -11,6 +11,7 @@ void handle_key_event(char key);
 void todo_window_loop(void);
 void delete_todo_item(void);
 void linelist_remove_item(LineList_t *list, Line_t *node);
+void toggle_todo_curr_item(void);
 
 Screen_t *scrn; /* Global scrn var initialised in ui.c */
 char *todo_file_name;
@@ -26,6 +27,7 @@ void todo_window_loop(void) {
     char key = wgetch(scrn->main);
 
     switch (key) {
+      /* Quit program */
     case 'q' | 'Q': {
       /* Exit program here */
       DEBUG("---> User pressed '%c', quiting...", key);
@@ -33,12 +35,19 @@ void todo_window_loop(void) {
       exit(0);
       break;
     }
+      /* Toggle todo status */
+    case ' ': {
+      toggle_todo_curr_item();
+      break;
+    }
+      /* Add new item */
     case 'a': {
       DEBUG("%s", "User wants to add a new todo item...");
       add_new_todo();
 
       break;
     }
+      /* Remove item */
     case 'd': {
       /* Delete todo */
       delete_todo_item();
@@ -59,6 +68,23 @@ void todo_window_loop(void) {
       break;
     }
   }
+}
+
+void toggle_todo_curr_item(void) {
+
+  TODO_STATUS_t *currStatus = &scrn->lines->current_line->item.status;
+  /* TODO Change the str value of the todo item to reflect the change in status
+   */
+
+  if (*currStatus == e_status_complete) {
+    *currStatus = e_status_incomplete;
+
+  } else {
+    *currStatus = e_status_complete;
+  }
+
+  line_render(scrn->lines->current_line, scrn->current_line_index + 1);
+  ui_hl_update(scrn->lines->current_line, NULL);
 }
 
 /* Entry point for deletion
