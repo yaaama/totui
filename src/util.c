@@ -11,6 +11,7 @@ char *status_enum_to_string(TODO_STATUS_e status);
 char *handle_no_status(char *str);
 void replace_tag_with_checkbox(char *str, TODO_STATUS_e status);
 void cut_tag_from_line_string(char *str, TODO_STATUS_e status);
+void strip_ws(char *str, const size_t length);
 
 /************************************/
 /* /\* Function implementations *\/ */
@@ -165,6 +166,7 @@ LineList_t *load_todo_file(char *fn) {
 
     cut_tag_from_line_string(fmtCurrLine, nl->item.status);
     DEBUG("-> 3 Removed tag: %s", fmtCurrLine);
+
     strncpy(nl->item.str, fmtCurrLine, MAX_TODO_LEN - 1); /* Sets the raw str */
     DEBUG("-> 4 Copied str: %s", nl->item.str);
     // REVIEW I decided to make not include this and actually have the checkbox
@@ -207,7 +209,7 @@ void dump_todo_to_file(LineList_t *lines) {
 /* This function will cut tag such as `T/ODO` or `DONE` from a string */
 void cut_tag_from_line_string(char *str, TODO_STATUS_e status) {
 
-  char retStr[MAX_TODO_LEN] = {""};
+  char strBuild[MAX_TODO_LEN + 1] = {""};
 
   char *statusStr = status_enum_to_string(status);
   DEBUG("--> Status str: %s", statusStr);
@@ -222,16 +224,38 @@ void cut_tag_from_line_string(char *str, TODO_STATUS_e status) {
   size_t offset = idx;
   /* Moving past the tag line... */
   while (match[idx] != '\0') {
-
-    retStr[idx - offset] = match[idx];
+    strBuild[idx - offset] = match[idx];
     ++idx;
   }
-  /* Make the last 2 characters a space and a null term */
-  retStr[idx - offset + 1] = ' ';
-  retStr[idx - offset + 2] = '\0';
-  DEBUG("-->FIN match str: %s", statusStr);
 
-  strncpy(str, retStr, MAX_TODO_LEN - 1);
+  strip_ws(strBuild, MAX_TODO_LEN - 1);
+  /* DEBUG("Stripped string: %s", stripped); */
+
+  strncpy(str, strBuild, MAX_TODO_LEN);
+}
+
+/* Strips whitespace in place. */
+void strip_ws(char *str, const size_t length) {
+
+  size_t idx = 0;
+  size_t len = strlen(str);
+  char stripped[length + 1];
+
+  while (isspace(str[idx])) {
+    idx++;
+  }
+  size_t offset = idx;
+  while (isspace(str[len - 1])) {
+    len--;
+  }
+
+  while (idx < len && str[idx] != '\0') {
+    stripped[idx - offset] = str[idx];
+    ++idx;
+  }
+  stripped[idx - 1] = '\0';
+
+  strncpy(str, stripped, length - 1);
 }
 
 /* Function that takes a string without a status and then prepends :TODO: to it.
