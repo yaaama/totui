@@ -20,6 +20,7 @@ void ui_init_helpbar(void); /* TODO */
 void ui_init_line(void);    /* TODO */
 void init_main_screen(void);
 void ui_refresh(void);
+void line_wprint(Line_t *line);
 
 /* Frees mem from the entire list and destroys the UI.
  * Called on exit */
@@ -59,22 +60,13 @@ void ui_init_colours(void) {
   init_pair(4, COLOR_CYAN, COLOR_BLACK);
 }
 
-/* Removes highlighting from line. */
-void hl_remove(Line_t *line) {
-  // TODO Turn the default highlighting into a macro
-  wattroff(line->window, ATTR_CURR_LINE);
-  wclear(line->window);
-  wprintw(line->window, "%s\n", line->item.str);
-  wrefresh(line->window);
-}
+/* Clears the window and then prints to the window in the line struct*/
+void line_wprint(Line_t *line) {
 
-/* Adds highlighting to a line. */
-void hl_add(Line_t *line) {
-  wattron(line->window, ATTR_CURR_LINE);
+  assert(line != NULL && "Line is NULL.");
+  char *statStr = convert_status_to_box(line->item.status);
   wclear(line->window);
-  wprintw(line->window, "%s", line->item.str);
-  wrefresh(line->window);
-  wattroff(line->window, ATTR_CURR_LINE);
+  wprintw(line->window, "%s %s", statStr, line->item.str);
 }
 
 /* Will update the highlighting by removing the highlight from an old
@@ -85,12 +77,19 @@ void ui_hl_update(Line_t *new, Line_t *old) {
 
   assert(new != NULL);
 
-  /* If there is a cursor to remove highlighting from... */
+  /* If there is an old line to remove highlighting from... */
   if (old) {
-    hl_remove(old);
+    wattroff(old->window, ATTR_CURR_LINE);
+    wclear(old->window);
+    line_wprint(old);
+    wrefresh(old->window);
   }
 
-  hl_add(new);
+  wattron(new->window, ATTR_CURR_LINE);
+  wclear(new->window);
+  line_wprint(new);
+  wrefresh(new->window);
+  wattroff(new->window, ATTR_CURR_LINE);
 }
 
 /* TODO Will display a popup for the user when the window is empty */
@@ -108,7 +107,7 @@ void ui_empty_todolist(void) {
 }
 
 /* This function moves the cursor either up or down. */
-void ui_mv_cursor(MVMNT_e go) {
+void ui_mv_cursor(MOVEMENT_TYPE_e go) {
 
   /* Cant move a cursor if there are no lines. */
   if (scrn->lines->size == 0) {
@@ -173,7 +172,7 @@ void ui_refresh(void) {
 
   /* If todo list is just 1 item, then hl that 1 item.. */
   if (scrn->lines->size == 1) {
-    hl_add(scrn->lines->current_line);
+    ui_hl_update(scrn->lines->current_line, NULL);
   }
 
   DEBUG("Refreshing all %zu lines!", scrn->lines->size);
@@ -274,13 +273,16 @@ void line_render(Line_t *line, size_t row) {
   if (line->item.status == e_status_complete) {
     wattron(line->window, ATTR_DONE);
     line->item.status = e_status_complete;
-    wprintw(line->window, "%s", line->item.str);
+    /* wprintw(line->window, "%s", line->item.str); */
+    line_wprint(line);
     wrefresh(line->window);
+
   } else if (line->item.status == e_status_incomplete) {
     /* NOTE: We can add highlighting here if we want to later on. */
     /* wattron(line->window, ATTR_TODO); */
     line->item.status = e_status_incomplete;
-    wprintw(line->window, "%s", line->item.str);
+    /* wprintw(line->window, "%s", line->item.str); */
+    line_wprint(line);
     wrefresh(line->window);
   }
 }
@@ -350,7 +352,7 @@ Screen_t *ui_init(LineList_t *lines) {
 
   /* Set up lines linked list */
   render_all_lines(lines);
-  hl_add(scrn->lines->current_line);
+  ui_hl_update(scrn->lines->current_line, NULL);
 
   return scrn;
 }

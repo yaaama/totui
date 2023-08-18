@@ -46,15 +46,8 @@ typedef enum TODO_STATUS {
   /* NOTE: Add more statuses later down the line. */
 } TODO_STATUS_e;
 
-/* TODO Dimensions, not yet used */
-typedef struct Dimensions {
-  size_t x;
-  size_t y;
-} Dimensions_t;
-
 /* Structure of a todo item */
 typedef struct TodoItem {
-
   size_t length;          /* Length of the line */
   char str[MAX_TODO_LEN]; /* Todo contents */
   TODO_STATUS_e status;   /* Status of the todo item */
@@ -79,6 +72,12 @@ typedef struct LineList {
   size_t size;
 
 } LineList_t;
+
+/* TODO Dimensions, not yet used */
+typedef struct Dimensions {
+  size_t x;
+  size_t y;
+} Dimensions_t;
 
 /* Structure that contains the entire screen contents. */
 typedef struct Screen {
