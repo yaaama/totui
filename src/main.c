@@ -144,20 +144,13 @@ void add_new_todo(void) {
 
   size_t inpLen = strlen(inp);
   DEBUG("Input length is: %zu", inpLen);
-  size_t finalLen = inpLen + 6;
-  DEBUG("Final formatted length is: %zu", finalLen);
-
-  /* TODO Make this give an error message */
-  if (finalLen > MAX_TODO_LEN) {
-    DEBUG("%s", "Input string is too long!");
-  }
 
   /* Formatting the input received */
-  char *fmtedStr = calloc(MAX_TODO_LEN, sizeof(char));
-  const char *prepend = "[ ] ";
-  strncat(fmtedStr, prepend, 4); /* Inserting prepend first */
-  strncat(fmtedStr, inp, MAX_TODO_LEN - 1);
-  strncat(fmtedStr, "\0", 2);
+  char fmtedStr[MAX_TODO_LEN + 1] = {""};
+  char *prepend = ":TODO: "; /* TODO: Change this to a macro or something. */
+  size_t tagLen = strlen(prepend);
+  strncat(fmtedStr, prepend, tagLen + 1);
+  strncat(fmtedStr, inp, MAX_TODO_LEN - tagLen);
 
   DEBUG("Adding new todo item: '%s'", fmtedStr);
   append_to_file(todo_file_name, fmtedStr);
