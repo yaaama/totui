@@ -33,17 +33,18 @@ typedef enum ACTION_TYPE {
   e_cmd_remove_item,
   e_cmd_toggle_item,
   e_cmd_move_cursor
-} ACTION_TYPE_t;
+} ACTION_TYPE_e;
 
 /* Type of movement of the cursor */
-typedef enum MOVEMENT_TYPE { e_mv_down, e_mv_up } MOVEMENT_TYPE_t;
+typedef enum MOVEMENT_TYPE { e_mv_down, e_mv_up } MOVEMENT_TYPE_e;
 
 /* Todo status */
 typedef enum TODO_STATUS {
   e_status_complete,
-  e_status_incomplete
+  e_status_incomplete,
+  e_status_none,
   /* NOTE: Add more statuses later down the line. */
-} TODO_STATUS_t;
+} TODO_STATUS_e;
 
 /* TODO Dimensions, not yet used */
 typedef struct Dimensions {
@@ -56,7 +57,7 @@ typedef struct TodoItem {
 
   size_t length;          /* Length of the line */
   char str[MAX_TODO_LEN]; /* Todo contents */
-  TODO_STATUS_t status;   /* Status of the todo item */
+  TODO_STATUS_e status;   /* Status of the todo item */
 
 } TodoItem_t;
 
@@ -97,7 +98,7 @@ Screen_t *ui_init(LineList_t *ls);
 void linelist_destroy(LineList_t *list);
 void ui_hl_update(Line_t *new, Line_t *old);
 void ui_destroy(void);
-void ui_mv_cursor(MOVEMENT_TYPE_t go);
+void ui_mv_cursor(MOVEMENT_TYPE_e go);
 int createForm(void);
 void ui_refresh(void);
 void line_render(Line_t *line, size_t row);

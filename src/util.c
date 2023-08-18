@@ -7,6 +7,8 @@ const char *get_local_time(void);
 void print_all_todo_items(LineList_t *line_list);
 void append_to_file(char *filename, char *str);
 char *strip_string(char *str);
+char *enum_status_string(TODO_STATUS_e status);
+char *handle_no_status(char *str);
 
 /************************************/
 /* /\* Function implementations *\/ */
@@ -121,7 +123,12 @@ LineList_t *load_todo_file(char *fn) {
     /* REVIEW This may cause some problems later on... */
     char *fmtCurrLine = strip_string(currLine);
 
-    TODO_STATUS_t status = parse_todo_status(fmtCurrLine);
+    TODO_STATUS_e status = parse_todo_status(fmtCurrLine);
+
+    if (status == e_status_none) {
+      handle_no_status(fmtCurrLine);
+      status = e_status_incomplete;
+    }
     nl->item.status = status; /* Setting the status */
 
     strncpy(nl->item.str, fmtCurrLine, MAX_TODO_LEN - 1); /* Sets the raw str */
@@ -179,8 +186,44 @@ void format_current_line(char *str) {
   }
 }
 
+/* Function that takes a string without a status and then prepends :TODO: to it.
+ */
+char *handle_no_status(char *str) {
+
+  DEBUG("--> There is no status for line: %s", str);
+
+  /* Initialises the string (necessary) */
+  char appendedStr[MAX_TODO_LEN] = {""};
+  char *stat = enum_status_string(e_status_none);
+
+  strncat(appendedStr, stat, strlen(stat));
+  strncat(appendedStr, " ", 1);
+  strncat(appendedStr, str, MAX_TODO_LEN - strlen(stat) - 2);
+
+  strncpy(str, appendedStr, MAX_TODO_LEN - 1);
+
+  DEBUG("Returning %s", str);
+  return str;
+}
+
+/* Takes a Status enum and then returns a string literal that associates with it
+ */
+char *enum_status_string(TODO_STATUS_e status) {
+
+  switch (status) {
+  case e_status_complete:
+    return ":DONE:";
+  case e_status_incomplete:
+    return ":TODO:";
+  case e_status_none:
+    return ":TODO:";
+    break;
+  }
+  return ":TODO:";
+}
+
 /* Takes a string and determines if the line is done or not */
-TODO_STATUS_t parse_todo_status(char *str) {
+TODO_STATUS_e parse_todo_status(char *str) {
 
   DEBUG("%s %s", "---> Parsing the todo status of line:", str);
   /* List of things to look for */
@@ -192,9 +235,10 @@ TODO_STATUS_t parse_todo_status(char *str) {
     return e_status_complete;
   } else if (strstr(str, todo)) {
     return e_status_incomplete;
-  }
+  } else
+    return e_status_none;
 
-  assert(false && "TODO Checkbox not found. Handle this.");
+  assert(false && "Checkbox not found. Handle this.");
 
   return e_status_incomplete;
 }

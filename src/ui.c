@@ -108,7 +108,7 @@ void ui_empty_todolist(void) {
 }
 
 /* This function moves the cursor either up or down. */
-void ui_mv_cursor(MOVEMENT_TYPE_t go) {
+void ui_mv_cursor(MVMNT_e go) {
 
   /* Cant move a cursor if there are no lines. */
   if (scrn->lines->size == 0) {

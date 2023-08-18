@@ -72,7 +72,7 @@ void todo_window_loop(void) {
 
 void toggle_todo_curr_item(void) {
 
-  TODO_STATUS_t *currStatus = &scrn->lines->current_line->item.status;
+  TODO_STATUS_e *currStatus = &scrn->lines->current_line->item.status;
   /* TODO Change the str value of the todo item to reflect the change in status
    */
 
@@ -179,7 +179,7 @@ void add_new_todo(void) {
 }
 
 /* Add a todo item to the end of the linked list */
-void linelist_add_item(LineList_t *list, char *str, TODO_STATUS_t status) {
+void linelist_add_item(LineList_t *list, char *str, TODO_STATUS_e status) {
   Line_t *newNode = malloc(sizeof(Line_t));
   if (!newNode)
     return;
