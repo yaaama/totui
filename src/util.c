@@ -7,8 +7,10 @@ const char *get_local_time(void);
 void print_all_todo_items(LineList_t *line_list);
 void append_to_file(char *filename, char *str);
 char *strip_string(char *str);
-char *enum_status_string(TODO_STATUS_e status);
+char *status_enum_to_string(TODO_STATUS_e status);
 char *handle_no_status(char *str);
+void replace_tag_with_checkbox(char *str, TODO_STATUS_e status);
+void cut_tag_from_line_string(char *str, TODO_STATUS_e status);
 
 /************************************/
 /* /\* Function implementations *\/ */
@@ -24,6 +26,30 @@ char *handle_no_status(char *str);
 /*****/
 /* 1 */
 /*****/
+
+/* Strips a string of its trailing white space and its leading whitespace.
+ * Taken from stack overflow:
+ * https://stackoverflow.com/questions/352055/best-algorithm-to-strip-leading-and-trailing-spaces-in-c?noredirect=1&lq=1
+ */
+char *strip_string(char *s) {
+  size_t size;
+  char *end;
+
+  size = strlen(s);
+
+  if (!size)
+    return s;
+
+  end = s + size - 1;
+  while (end >= s && isspace(*end))
+    end--;
+  *(end + 1) = '\0';
+
+  while (*s && isspace(*s))
+    s++;
+
+  return s;
+}
 
 /* Returns local time. */
 const char *get_local_time(void) {
@@ -121,8 +147,14 @@ LineList_t *load_todo_file(char *fn) {
     nl->previous = prev;
 
     /* REVIEW This may cause some problems later on... */
-    char *fmtCurrLine = strip_string(currLine);
 
+    char fmtCurrLine[MAX_TODO_LEN + 1] = {""};
+    DEBUG("-> 1 Current line: %s", currLine);
+    strcpy(fmtCurrLine, currLine);
+    strip_string(fmtCurrLine);
+    DEBUG("-> 2 Formatted line: %s", fmtCurrLine);
+
+    /* Figuring out what the status for the current line is */
     TODO_STATUS_e status = parse_todo_status(fmtCurrLine);
 
     if (status == e_status_none) {
@@ -131,7 +163,14 @@ LineList_t *load_todo_file(char *fn) {
     }
     nl->item.status = status; /* Setting the status */
 
+    cut_tag_from_line_string(fmtCurrLine, nl->item.status);
+    DEBUG("-> 3 Removed tag: %s", fmtCurrLine);
     strncpy(nl->item.str, fmtCurrLine, MAX_TODO_LEN - 1); /* Sets the raw str */
+    DEBUG("-> 4 Copied str: %s", nl->item.str);
+    // REVIEW I decided to make not include this and actually have the checkbox
+    // processed during UI rendering.
+    /* // Replaces the status tag with a checkbox */
+    /* append_box_to_file_str(nl->item.str, status); */
 
     nl->item.length = strlen(nl->item.str);
 
@@ -144,7 +183,7 @@ LineList_t *load_todo_file(char *fn) {
     prev = nl;
     index++;
 
-    DEBUG("Line '%s' loaded", nl->item.str);
+    DEBUG("->3 Line '%s' loaded", nl->item.str);
   }
 
   retList->tail = prev;
@@ -157,33 +196,42 @@ LineList_t *load_todo_file(char *fn) {
   return retList;
 }
 
-/* Taken from stack overflow:
- * https://stackoverflow.com/questions/352055/best-algorithm-to-strip-leading-and-trailing-spaces-in-c?noredirect=1&lq=1
- */
-char *strip_string(char *s) {
-  size_t size;
-  char *end;
+void dump_todo_to_file(LineList_t *lines) {
 
-  size = strlen(s);
+  Line_t *curr = lines->head;
 
-  if (!size)
-    return s;
-
-  end = s + size - 1;
-  while (end >= s && isspace(*end))
-    end--;
-  *(end + 1) = '\0';
-
-  while (*s && isspace(*s))
-    s++;
-
-  return s;
+  while (curr) {
+  }
 }
 
-void format_current_line(char *str) {
+/* This function will cut tag such as `T/ODO` or `DONE` from a string */
+void cut_tag_from_line_string(char *str, TODO_STATUS_e status) {
 
-  while (isspace(*str)) {
+  char retStr[MAX_TODO_LEN] = {""};
+
+  char *statusStr = status_enum_to_string(status);
+  DEBUG("--> Status str: %s", statusStr);
+  size_t statusLen = strlen(statusStr);
+  DEBUG("statuslen %zu", statusLen);
+  char *match = strstr(str, statusStr);
+  DEBUG("match %s", match);
+
+  assert(match && "There is no tag in this string.");
+
+  size_t idx = statusLen;
+  size_t offset = idx;
+  /* Moving past the tag line... */
+  while (match[idx] != '\0') {
+
+    retStr[idx - offset] = match[idx];
+    ++idx;
   }
+  /* Make the last 2 characters a space and a null term */
+  retStr[idx - offset + 1] = ' ';
+  retStr[idx - offset + 2] = '\0';
+  DEBUG("-->FIN match str: %s", statusStr);
+
+  strncpy(str, retStr, MAX_TODO_LEN - 1);
 }
 
 /* Function that takes a string without a status and then prepends :TODO: to it.
@@ -194,7 +242,7 @@ char *handle_no_status(char *str) {
 
   /* Initialises the string (necessary) */
   char appendedStr[MAX_TODO_LEN] = {""};
-  char *stat = enum_status_string(e_status_none);
+  char *stat = status_enum_to_string(e_status_none);
 
   strncat(appendedStr, stat, strlen(stat));
   strncat(appendedStr, " ", 1);
@@ -206,9 +254,42 @@ char *handle_no_status(char *str) {
   return str;
 }
 
+/* TODO Perhaps implement this to be able to change a specific line in the file?
+  Another idea is that we can just write to the file when we exit or add a new
+  item / delete item etc. */
+void change_todo_status_file_str(void) {
+  /* void change_todo_status_file_str(Line_t *line, TODO_STATUS_e new_status) {
+   */
+  /* line = NULL; */
+  /* new_status = 0; */
+
+  FILE *file = fopen(todo_file_name, "rw");
+  char currLine[MAX_TODO_LEN];
+
+  while (fgets(currLine, MAX_TODO_LEN - 1, file) != NULL) {
+  }
+}
+
+/* Will replace a string that contains a tag, with a checkbox instead.  */
+void replace_tag_with_checkbox(char *str, TODO_STATUS_e status) {
+
+  char boxedLine[MAX_TODO_LEN] = "";
+  char *box = convert_status_to_box(status);
+  size_t boxLen = strlen(box);
+  size_t tagLen = strlen(status_enum_to_string(status));
+
+  strncat(boxedLine, box, boxLen);
+  DEBUG("Str right now: %s, length of box: %zu", boxedLine, boxLen);
+  strncat(boxedLine, &str[tagLen], MAX_TODO_LEN - boxLen - 1);
+  DEBUG("Str right now: %s", boxedLine);
+
+  strncpy(str, boxedLine, MAX_TODO_LEN - 1);
+  DEBUG("Str right now: %s", str);
+}
+
 /* Takes a Status enum and then returns a string literal that associates with it
  */
-char *enum_status_string(TODO_STATUS_e status) {
+char *status_enum_to_string(TODO_STATUS_e status) {
 
   switch (status) {
   case e_status_complete:
@@ -220,6 +301,21 @@ char *enum_status_string(TODO_STATUS_e status) {
     break;
   }
   return ":TODO:";
+}
+
+/* Returns a checkbox for the specified status */
+char *convert_status_to_box(TODO_STATUS_e status) {
+
+  switch (status) {
+  case e_status_complete:
+    return "[x]";
+  case e_status_incomplete:
+    return "[ ]";
+  case e_status_none:
+    return "[ ]";
+    break;
+  }
+  return "[ ]";
 }
 
 /* Takes a string and determines if the line is done or not */
