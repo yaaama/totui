@@ -154,6 +154,7 @@ void add_new_todo(void) {
 
   DEBUG("Adding new todo item: '%s'", fmtedStr);
   append_to_file(todo_file_name, fmtedStr);
+  cut_tag_from_line_string(fmtedStr, e_status_incomplete);
 
   TodoItem_t *item = malloc(sizeof(TodoItem_t));
   item->length = strlen(fmtedStr);
