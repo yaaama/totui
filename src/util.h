@@ -58,5 +58,6 @@ TODO_STATUS_e parse_todo_status(char *str);
 char *status_enum_to_string(TODO_STATUS_e status);
 char *convert_status_to_box(TODO_STATUS_e status);
 void cut_tag_from_line_string(char *str, TODO_STATUS_e status);
+void dump_state(LineList_t *list);
 
 #endif // UTIL_H_

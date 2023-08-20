@@ -31,7 +31,9 @@ void todo_window_loop(void) {
     case 'q' | 'Q': {
       /* Exit program here */
       DEBUG("---> User pressed '%c', quiting...", key);
+      dump_state(scrn->lines);
       ui_destroy();
+
       exit(0);
       break;
     }
@@ -95,27 +97,41 @@ void toggle_todo_curr_item(void) {
  * Displays a dialog window and asks if user really wants to delete item */
 void delete_todo_item(void) {
 
+  if (scrn_lines_empty()) {
+    return;
+  }
+
   int yn =
       dialog_yesno("Deleting todo item!", "Do you really want to delete this?",
                    LINES / 2, COLS / 2);
 
   if (yn) { /* User no longer wants to delete the item */
+    /* Clear up the screen and refresh it */
+    end_dialog();
+    refresh();
+    ui_refresh();
     return;
   }
 
-  DEBUG("User wants to delete item '%s'", scrn->lines->current_line->item.str);
+  DEBUG("User wants to delete item '%s'", scrn->lines->current_line->item->str);
 
   /* This is the Y coord of the deleted window */
   size_t delY = scrn->lines->current_line->window->_begy;
   linelist_remove_item(scrn->lines, scrn->lines->current_line);
   scrn->current_line_index--;
+
   print_all_todo_items(scrn->lines);
 
   if (scrn_lines_empty()) {
     /* TODO Handle what happens when the screen is empty */
     /* ui_empty_todolist(); */
+    end_dialog();
+    refresh();
+    ui_refresh();
     return;
   }
+  end_dialog();
+  refresh();
   ui_refresh_delete(delY);
   ui_hl_update(scrn->lines->current_line, NULL);
 }
@@ -137,10 +153,8 @@ void add_new_todo(void) {
 
     DEBUG("%s", "Empty input received.");
     /* Clear up the screen and refresh it */
-    endwin();
-    clear();
-    dlg_clr_result();
-    dlg_clear();
+    /* dlg_clr_result(); */
+    /* dlg_clear(); */
     refresh();
     ui_refresh();
     return;

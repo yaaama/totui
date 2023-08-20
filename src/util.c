@@ -201,7 +201,7 @@ LineList_t *load_todo_file(char *fn) {
   return retList;
 }
 
-void dump_todo_to_file(LineList_t *lines) {
+void dump_state_to_file(LineList_t *lines) {
 
   Line_t *curr = lines->head;
 
@@ -214,20 +214,20 @@ void cut_tag_from_line_string(char *str, TODO_STATUS_e status) {
 
   char strBuild[MAX_TODO_LEN + 1] = {""};
 
+  /* Retrieving the string value of the status enum */
   char *statusStr = status_enum_to_string(status);
-  DEBUG("--> Status str: %s", statusStr);
   size_t statusLen = strlen(statusStr);
-  DEBUG("statuslen %zu", statusLen);
+  /* Seeing if the status tag exists in the string */
   char *match = strstr(str, statusStr);
-  DEBUG("match %s", match);
 
   assert(match && "There is no tag in this string.");
 
+  /* idx tells us where to retrieving characters from  */
   size_t idx = statusLen;
-  size_t offset = idx;
-  /* Moving past the tag line... */
+  /* Now we are filling up a new string */
   while (match[idx] != '\0') {
-    strBuild[idx - offset] = match[idx];
+    /* idx-statusLen so that the indexing starts at 0 */
+    strBuild[idx - statusLen] = match[idx];
     ++idx;
   }
 
@@ -245,11 +245,11 @@ void strip_ws(char *str, const size_t length) {
   char stripped[length + 1];
 
   while (isspace(str[idx])) {
-    idx++;
+    ++idx;
   }
   size_t offset = idx;
   while (isspace(str[len - 1])) {
-    len--;
+    --len;
   }
 
   while (idx < len && str[idx] != '\0') {
@@ -281,20 +281,36 @@ char *handle_no_status(char *str) {
   return str;
 }
 
-/* TODO Perhaps implement this to be able to change a specific line in the file?
-  Another idea is that we can just write to the file when we exit or add a new
-  item / delete item etc. */
-void change_todo_status_file_str(void) {
-  /* void change_todo_status_file_str(Line_t *line, TODO_STATUS_e new_status) {
-   */
-  /* line = NULL; */
-  /* new_status = 0; */
+/* Upon exit, this file will be called and then the new updated todo list will
+ * be dumped into the file */
+void dump_state(LineList_t *lines) {
 
-  FILE *file = fopen(todo_file_name, "rw");
-  char currLine[MAX_TODO_LEN];
+  FILE *file = fopen(todo_file_name, "w");
 
-  while (fgets(currLine, MAX_TODO_LEN - 1, file) != NULL) {
+  Line_t *currLine = lines->head;
+
+  while (currLine) {
+    switch (currLine->item->status) {
+    case e_status_complete: {
+      fprintf(file, ":DONE: %s\n", currLine->item->str);
+      break;
+    }
+
+    case e_status_incomplete: {
+      fprintf(file, ":TODO: %s\n", currLine->item->str);
+      break;
+    }
+
+    case e_status_none: {
+      fprintf(file, ":TODO: %s\n", currLine->item->str);
+      break;
+    }
+    default:
+      break;
+    }
+    currLine = currLine->next;
   }
+  fclose(file);
 }
 
 /* Will replace a string that contains a tag, with a checkbox instead.  */

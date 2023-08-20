@@ -46,6 +46,8 @@ void ui_destroy(void) {
   endwin();
   refresh();
   endwin();
+
+  exit_curses(0);
 }
 
 /* Will set the colours for ncurses to use
@@ -110,6 +112,7 @@ void ui_mv_cursor(MOVEMENT_TYPE_e go) {
   /* Cant move a cursor if there are no lines. */
   if (scrn->lines->size == 0) {
     DEBUG("--> Screen empty, movement is impossible.");
+    return;
   }
 
   Line_t *mvHere = NULL;
@@ -333,6 +336,7 @@ void init_main_screen(void) {
   box(scrn->main, 0, 0);
   wrefresh(scrn->main);
   ui_init_colours();
+  scrn->current_line_index = 0;
 }
 
 bool scrn_lines_empty(void) {
