@@ -72,17 +72,21 @@ void todo_window_loop(void) {
 
 void toggle_todo_curr_item(void) {
 
-  TODO_STATUS_e *currStatus = &scrn->lines->current_line->item.status;
+  DEBUG("--> Toggling todo...");
+  TODO_STATUS_e currStatus = scrn->lines->current_line->item->status;
   /* TODO Change the str value of the todo item to reflect the change in status
    */
 
-  if (*currStatus == e_status_complete) {
-    *currStatus = e_status_incomplete;
+  if (currStatus == e_status_complete) {
+    /* currStatus = e_status_incomplete; */
+    scrn->lines->current_line->item->status = e_status_incomplete;
 
   } else {
-    *currStatus = e_status_complete;
+    /* *currStatus = e_status_complete; */
+    scrn->lines->current_line->item->status = e_status_complete;
   }
 
+  DEBUG("Row val: %zu", scrn->current_line_index + 1);
   line_render(scrn->lines->current_line, scrn->current_line_index + 1);
   ui_hl_update(scrn->lines->current_line, NULL);
 }
@@ -151,12 +155,12 @@ void add_new_todo(void) {
   size_t tagLen = strlen(prepend);
   strncat(fmtedStr, prepend, tagLen + 1);
   strncat(fmtedStr, inp, MAX_TODO_LEN - tagLen);
+  TodoItem_t *item = malloc(sizeof(TodoItem_t));
 
   DEBUG("Adding new todo item: '%s'", fmtedStr);
   append_to_file(todo_file_name, fmtedStr);
   cut_tag_from_line_string(fmtedStr, e_status_incomplete);
 
-  TodoItem_t *item = malloc(sizeof(TodoItem_t));
   item->length = strlen(fmtedStr);
   item->status = e_status_incomplete;
   strncpy(item->str, fmtedStr, MAX_TODO_LEN);
@@ -165,22 +169,27 @@ void add_new_todo(void) {
   line_list_add_new_item(item);
   /* Render this new line */
   line_render(scrn->lines->tail, scrn->lines->size);
+
+  refresh();
   ui_refresh();
 
   dlg_clr_result();
 
   free(dialog_vars.input_result);
+  /* dlg_clear(); */
 }
 
 /* Add a todo item to the end of the linked list */
 void linelist_add_item(LineList_t *list, char *str, TODO_STATUS_e status) {
   Line_t *newNode = malloc(sizeof(Line_t));
+
   if (!newNode)
     return;
+  newNode->item = malloc(sizeof(TodoItem_t));
 
-  newNode->item.length = strlen(str);
-  strncpy(newNode->item.str, str, MAX_TODO_LEN);
-  newNode->item.status = status;
+  newNode->item->length = strlen(str);
+  strncpy(newNode->item->str, str, MAX_TODO_LEN);
+  newNode->item->status = status;
   newNode->next = NULL;
   newNode->previous = list->tail;
 
@@ -224,7 +233,7 @@ void linelist_remove_item(LineList_t *list, Line_t *node) {
 Line_t *linelist_find_item(LineList_t *list, char *str) {
   Line_t *curr = list->head;
   while (curr) {
-    if (strncmp(curr->item.str, str, MAX_TODO_LEN) == 0) {
+    if (strncmp(curr->item->str, str, MAX_TODO_LEN) == 0) {
       return curr;
     }
     curr = curr->next;

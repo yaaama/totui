@@ -31,7 +31,7 @@ void ui_destroy(void) {
   while (curr) {
     delwin(curr->window);
     Line_t *next = curr->next;
-    /* free(curr->item); */
+    free(curr->item);
     free(curr);
     curr = next;
   }
@@ -64,9 +64,9 @@ void ui_init_colours(void) {
 void line_wprint(Line_t *line) {
 
   assert(line != NULL && "Line is NULL.");
-  char *statStr = convert_status_to_box(line->item.status);
+  char *statStr = convert_status_to_box(line->item->status);
   wclear(line->window);
-  wprintw(line->window, "%s %s", statStr, line->item.str);
+  wprintw(line->window, "%s %s", statStr, line->item->str);
 }
 
 /* Will update the highlighting by removing the highlight from an old
@@ -74,8 +74,6 @@ void line_wprint(Line_t *line) {
  * This is necessary for when the user moves the cursor up and down.
  * The highlighting displays to the user which line they are on. */
 void ui_hl_update(Line_t *new, Line_t *old) {
-
-  assert(new != NULL);
 
   /* If there is an old line to remove highlighting from... */
   if (old) {
@@ -85,8 +83,8 @@ void ui_hl_update(Line_t *new, Line_t *old) {
     wrefresh(old->window);
   }
 
-  wattron(new->window, ATTR_CURR_LINE);
   wclear(new->window);
+  wattron(new->window, ATTR_CURR_LINE);
   line_wprint(new);
   wrefresh(new->window);
   wattroff(new->window, ATTR_CURR_LINE);
@@ -131,7 +129,7 @@ void ui_mv_cursor(MOVEMENT_TYPE_e go) {
     /* Check if any elements above the current: */
     if (!currLine->previous) {
       DEBUG("Cannot move up! Cursor is on the top most element -> %s",
-            scrn->lines->current_line->item.str);
+            scrn->lines->current_line->item->str);
       return;
     }
     /* When you want to move up, that translates to going to the previous item
@@ -146,7 +144,7 @@ void ui_mv_cursor(MOVEMENT_TYPE_e go) {
     /* Check if any elements below the current */
     if (!currLine->next) {
       DEBUG("Cannot move down! Cursor on bottom most element -> '%s'",
-            scrn->lines->current_line->item.str);
+            scrn->lines->current_line->item->str);
       return;
     }
     mvHere = currLine->next;
@@ -157,20 +155,33 @@ void ui_mv_cursor(MOVEMENT_TYPE_e go) {
 
   scrn->lines->current_line = mvHere;
 
-  DEBUG("Cursor moved! Now at -> '%s'", scrn->lines->current_line->item.str);
+  DEBUG("Cursor moved! Now at -> '%s'", scrn->lines->current_line->item->str);
   ui_hl_update(scrn->lines->current_line,
                currLine); /* Updating the highlighting */
 }
 
+void ui_resized(void) {
+
+  resizeterm(LINES, COLS);
+  wresize(scrn->main, LINES, COLS);
+  box(scrn->main, LINES, COLS);
+  wrefresh(scrn->main);
+}
+
 /* ui_refresh refreshes the screen. */
 void ui_refresh(void) {
+
+  // TODO Add resize handling here.
+  /* if (is_term_resized(int, int)) { */
+  /*   ui_resized(); */
+  /* } */
 
   if (scrn->lines->size == 0) { /* Why bother refreshing an empty screen? */
     DEBUG("No lines to refresh, returning...");
     return;
   }
 
-  /* If todo list is just 1 item, then hl that 1 item.. */
+  /* If todo list is just 1 item then hl that 1 item. */
   if (scrn->lines->size == 1) {
     ui_hl_update(scrn->lines->current_line, NULL);
   }
@@ -185,17 +196,16 @@ void ui_refresh(void) {
   Line_t *curr = scrn->lines->head;
 
   while (curr) {
-    /* DEBUG("Attempting to redraw item: %s", curr->item.str); */
-    DEBUG("%s", "Refreshing UI...");
     redrawwin(curr->window);
     wrefresh(curr->window);
     curr = curr->next;
   }
+  DEBUG("%s", "UI Refreshed.");
 }
 
-/* Use this function after deleting an item.
- * Pass in the Y coordinate of the item being deleted so the items below it can
-   be shifted upwards. */
+/* Use this function after deleting an item
+ * Pass in the Y coordinate of the item being deleted so the item below it
+ can be shifted upwards. */
 void ui_refresh_delete(size_t delWinY) {
 
   DEBUG("--> Refreshing (after deletion) %zu lines!", scrn->lines->size);
@@ -208,7 +218,7 @@ void ui_refresh_delete(size_t delWinY) {
   size_t currY = curr->window->_begy;
 
   while (curr) {
-    DEBUG("Attempting to redraw item: %s", curr->item.str);
+    DEBUG("Attempting to redraw item-> %s", curr->item->str);
     if (currY >= delWinY) {
 
       line_render(curr, newY);
@@ -230,19 +240,19 @@ void ui_refresh_delete(size_t delWinY) {
 }
 
 /* Append a new Line_t to the scrn->lines linked list.
- * This function should be self explanatory. Give an TodoItem_t and it will
+ * This function should be self explanatory. Give an TodoItem and it will
  * malloc a new Line_t and add it to the linked list. Note that the function
  * does not render a new window for it. */
-void line_list_add_new_item(TodoItem_t *const item) {
+void line_list_add_new_item(TodoItem_t *item) {
 
-  DEBUG("Appending new item: %s", item->str);
+  DEBUG("Appending new item %s", item->str);
   LineList_t *list = scrn->lines;
   Line_t *newLine = malloc(sizeof(Line_t));
+  newLine->item = item;
   if (!newLine) {
     DEBUG("Malloc failed...");
     return;
   }
-  newLine->item = *item;
   newLine->next = NULL;
   newLine->previous = list->tail;
 
@@ -260,28 +270,35 @@ void line_list_add_new_item(TodoItem_t *const item) {
   }
 }
 
-/* This will print the todo item text stored in TodoItem_t.str on the associated
-WINDOW of each Line_t. * Also colours line based on completion status.
+/* void ui_todo_toggle(Line_t *line) {} */
+
+/* This will print the todo item str text stored in TodoItem->str on the
+associated WINDOW of each Line_t.
+* Also colours line based on completion status.
  * Used to render a line onto the screen when a new item is created.
 */
 void line_render(Line_t *line, size_t row) {
 
+  DEBUG("--> Rendering line in row %zu ", row);
   line->window = newwin(1, COLS - PADDING_X - 1, row, PADDING_X);
-  DEBUG("Drawing '%s' onto the screen.", line->item.str);
 
-  /* Check status value of each item and apply attributes accordingly */
-  if (line->item.status == e_status_complete) {
+  DEBUG("Drawing '%s' onto the screen.", line->item->str);
+
+  /* Check status value of each item->and apply attributes accordingly */
+  if (line->item->status == e_status_complete) {
+    DEBUG("Item is currently done, toggling into not done...");
     wattron(line->window, ATTR_DONE);
-    line->item.status = e_status_complete;
-    /* wprintw(line->window, "%s", line->item.str); */
+    line->item->status = e_status_complete;
+    /* wprintw(line->window, "%s", line->item->str); */
     line_wprint(line);
     wrefresh(line->window);
 
-  } else if (line->item.status == e_status_incomplete) {
+  } else if (line->item->status == e_status_incomplete) {
+    DEBUG("Item is currently done, toggling into not done...");
     /* NOTE: We can add highlighting here if we want to later on. */
     /* wattron(line->window, ATTR_TODO); */
-    line->item.status = e_status_incomplete;
-    /* wprintw(line->window, "%s", line->item.str); */
+    line->item->status = e_status_incomplete;
+    /* wprintw(line->window, "%s", line->item->str); */
     line_wprint(line);
     wrefresh(line->window);
   }
@@ -296,8 +313,8 @@ void render_all_lines(LineList_t *list) {
   Line_t *curr = list->head;
   size_t i = 0;
   while (curr) {
-    DEBUG("Initialising item '%zu', '%s', length: '%zu'", i, curr->item.str,
-          curr->item.length);
+    DEBUG("Initialising item->'%zu', '%s', length: '%zu'", i, curr->item->str,
+          curr->item->length);
     line_render(curr, i + 1);
     curr = curr->next;
     ++i;

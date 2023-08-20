@@ -136,6 +136,8 @@ LineList_t *load_todo_file(char *fn) {
     }
 
     Line_t *nl = malloc(sizeof(Line_t));
+    TodoItem_t *item = malloc(sizeof(TodoItem_t));
+    nl->item = item;
     if (!nl) {
       fclose(fp);
       DEBUG("Error allocating a line. %s", "Returning NULL.");
@@ -162,19 +164,20 @@ LineList_t *load_todo_file(char *fn) {
       handle_no_status(fmtCurrLine);
       status = e_status_incomplete;
     }
-    nl->item.status = status; /* Setting the status */
+    nl->item->status = status; /* Setting the status */
 
-    cut_tag_from_line_string(fmtCurrLine, nl->item.status);
+    cut_tag_from_line_string(fmtCurrLine, nl->item->status);
     DEBUG("-> 3 Removed tag: %s", fmtCurrLine);
 
-    strncpy(nl->item.str, fmtCurrLine, MAX_TODO_LEN - 1); /* Sets the raw str */
-    DEBUG("-> 4 Copied str: %s", nl->item.str);
+    strncpy(nl->item->str, fmtCurrLine,
+            MAX_TODO_LEN - 1); /* Sets the raw str */
+    DEBUG("-> 4 Copied str: %s", nl->item->str);
     // REVIEW I decided to make not include this and actually have the checkbox
     // processed during UI rendering.
     /* // Replaces the status tag with a checkbox */
     /* append_box_to_file_str(nl->item.str, status); */
 
-    nl->item.length = strlen(nl->item.str);
+    nl->item->length = strlen(nl->item->str);
 
     // Add the node to the linked list
     if (prev) {
@@ -185,7 +188,7 @@ LineList_t *load_todo_file(char *fn) {
     prev = nl;
     index++;
 
-    DEBUG("->3 Line '%s' loaded", nl->item.str);
+    DEBUG("->3 Line '%s' loaded", nl->item->str);
   }
 
   retList->tail = prev;
@@ -376,7 +379,7 @@ void print_all_todo_items(LineList_t *line_list) {
   Line_t *curr = line_list->head;
   size_t count = 0;
   while (curr) {
-    DEBUG("%zu : %s", count, curr->item.str);
+    DEBUG("%zu : %s", count, curr->item->str);
     ++count;
     curr = curr->next;
   }

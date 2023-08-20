@@ -48,9 +48,9 @@ typedef enum TODO_STATUS {
 
 /* Structure of a todo item */
 typedef struct TodoItem {
-  size_t length;          /* Length of the line */
-  char str[MAX_TODO_LEN]; /* Todo contents */
-  TODO_STATUS_e status;   /* Status of the todo item */
+  size_t length;              /* Length of the line */
+  char str[MAX_TODO_LEN + 1]; /* Todo contents */
+  TODO_STATUS_e status;       /* Status of the todo item */
 
 } TodoItem_t;
 
@@ -61,7 +61,7 @@ typedef struct Line {
   WINDOW *window; /* Each line will be rendered on a separate window */
   struct Line *next;
   struct Line *previous;
-  struct TodoItem item;
+  struct TodoItem *item;
 } Line_t;
 
 /* A doubly linked list of Line's */
