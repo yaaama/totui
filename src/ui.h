@@ -15,7 +15,7 @@
 
 #define PADDING_X 5
 #define PADDING_Y 3
-#define MAX_TODO_LEN 128
+#define MAX_TODO_LEN 64
 #define MAX_TODO_ITEMS 128
 
 #define ATTR_DONE COLOR_PAIR(2)
@@ -25,6 +25,11 @@
 /****************************/
 /* /\* Type definitions *\/ */
 /****************************/
+
+typedef enum ERROR_T {
+  err_term_small,
+  err_no_items,
+} ERROR_T;
 
 /* Used to describe what action is being taken
   NOTE: Not yet implemented */
@@ -74,10 +79,10 @@ typedef struct LineList {
 } LineList_t;
 
 /* TODO Dimensions, not yet used */
-typedef struct Dimensions {
+typedef struct Dim {
   size_t x;
   size_t y;
-} Dimensions_t;
+} Dim_t;
 
 /* Structure that contains the entire screen contents. */
 typedef struct Screen {
@@ -87,6 +92,7 @@ typedef struct Screen {
   LineList_t *lines;
   /* size_t lines_total; /\* Total number of lines in the screen *\/ */
   /* Line_t *currLine; */
+  struct Dim dimen;
   size_t current_line_index;
 } Screen_t;
 
@@ -94,6 +100,7 @@ typedef struct Screen {
 /* /\* Methods for UI *\/ */
 /**************************/
 Screen_t *ui_init(LineList_t *ls);
+
 void linelist_destroy(LineList_t *list);
 void ui_hl_update(Line_t *new, Line_t *old);
 void ui_destroy(void);
@@ -101,10 +108,11 @@ void ui_mv_cursor(MOVEMENT_TYPE_e go);
 int createForm(void);
 void ui_refresh(void);
 void line_render(Line_t *line, size_t row);
-void line_list_add_new_item(TodoItem_t *item);
+void linelist_add_item(TodoItem_t *item);
 void ui_remove_line(void);
 void ui_refresh_delete(size_t delWinY);
 void ui_empty_todolist(void);
+void ui_terminal_resized(void);
 
 /***************************/
 /* /\* Utility methods *\/ */

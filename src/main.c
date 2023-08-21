@@ -1,18 +1,23 @@
 #include "ui.h"
 #include "util.h"
+#include <signal.h>
 
 /*********************************/
 /* /\* Function declarations *\/ */
 /*********************************/
+// UI Integrated (may refactor)
 void add_new_todo(void);
-void init_todo_from_file(char *file);
-void init_display_items_todo_window(void);
-void handle_key_event(char key);
-void todo_window_loop(void);
-void delete_todo_item(void);
-void linelist_remove_item(LineList_t *list, Line_t *node);
 void toggle_todo_curr_item(void);
+void delete_todo_item(void);
 
+void init_todo_from_file(char *file);
+/* void init_display_items_todo_window(void); */
+/* void handle_key_event(char key); */
+// Main logic
+void todo_window_loop(void);
+void linelist_remove_item(LineList_t *list, Line_t *node);
+
+// Global variables
 Screen_t *scrn; /* Global scrn var initialised in ui.c */
 char *todo_file_name;
 
@@ -24,39 +29,48 @@ void todo_window_loop(void) {
   while (true) {
     fflush(stdin);
 
-    char key = wgetch(scrn->main);
+    int key = wgetch(scrn->main);
 
     switch (key) {
-      /* Quit program */
+      // Terminal has been resized
+    case KEY_RESIZE: {
+      ui_terminal_resized();
+      break;
+    }
+      // Quit program
     case 'q' | 'Q': {
-      /* Exit program here */
       DEBUG("---> User pressed '%c', quiting...", key);
-      dump_state(scrn->lines);
+      // TODO Uncomment this
+      /* dump_state(scrn->lines); */
       ui_destroy();
 
       exit(0);
       break;
     }
-      /* Toggle todo status */
+      // Toggle todo status
     case ' ': {
       toggle_todo_curr_item();
       break;
     }
-      /* Add new item */
+      // Add new item
     case 'a': {
       DEBUG("%s", "User wants to add a new todo item...");
       add_new_todo();
 
       break;
     }
-      /* Remove item */
+      // Remove item
     case 'd': {
       /* Delete todo */
       delete_todo_item();
       break;
     }
-      /* Movement keys */
-    case 'k': {
+      // Movement keys:
+    case ('k'): {
+      ui_mv_cursor(e_mv_up);
+      break;
+    }
+    case KEY_UP: {
       ui_mv_cursor(e_mv_up);
       break;
     }
@@ -64,9 +78,13 @@ void todo_window_loop(void) {
       ui_mv_cursor(e_mv_down);
       break;
     }
+    case KEY_DOWN: {
+      ui_mv_cursor(e_mv_down);
+      break;
+    }
     default:
-      /* TODO Handle when a non recognised key is pressed
-       * nonkey_pressed(key); */
+      // TODO Handle when a non recognised key is pressed
+      // nonkey_pressed(key);
       break;
     }
   }
@@ -140,7 +158,7 @@ void delete_todo_item(void) {
  * Displays a dialog window and asks what the todo item should be called */
 void add_new_todo(void) {
 
-  Dimensions_t dim = {COLS / 2, LINES / 2};
+  Dim_t dim = {COLS / 2, LINES / 2};
 
   dialog_inputbox("New todo!", "Enter new item:", dim.y, dim.x, "", 0);
   dialog_vars.dlg_clear_screen = true;
@@ -172,7 +190,7 @@ void add_new_todo(void) {
   TodoItem_t *item = malloc(sizeof(TodoItem_t));
 
   DEBUG("Adding new todo item: '%s'", fmtedStr);
-  append_to_file(todo_file_name, fmtedStr);
+  /* append_to_file(todo_file_name, fmtedStr); */
   cut_tag_from_line_string(fmtedStr, e_status_incomplete);
 
   item->length = strlen(fmtedStr);
@@ -180,41 +198,17 @@ void add_new_todo(void) {
   strncpy(item->str, fmtedStr, MAX_TODO_LEN);
 
   /* Add the new item to the todo items list */
-  line_list_add_new_item(item);
+  linelist_add_item(item);
   /* Render this new line */
   line_render(scrn->lines->tail, scrn->lines->size);
 
-  refresh();
+  /* refresh(); */
   ui_refresh();
 
   dlg_clr_result();
 
   free(dialog_vars.input_result);
   /* dlg_clear(); */
-}
-
-/* Add a todo item to the end of the linked list */
-void linelist_add_item(LineList_t *list, char *str, TODO_STATUS_e status) {
-  Line_t *newNode = malloc(sizeof(Line_t));
-
-  if (!newNode)
-    return;
-  newNode->item = malloc(sizeof(TodoItem_t));
-
-  newNode->item->length = strlen(str);
-  strncpy(newNode->item->str, str, MAX_TODO_LEN);
-  newNode->item->status = status;
-  newNode->next = NULL;
-  newNode->previous = list->tail;
-
-  if (list->tail) {
-    list->tail->next = newNode;
-  } else {
-    list->head = newNode;
-  }
-
-  list->tail = newNode;
-  list->size++;
 }
 
 /* Delete a node from the list */
