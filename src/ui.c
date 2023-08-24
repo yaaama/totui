@@ -26,6 +26,7 @@ void draw_mainscrn_box(WINDOW *window);
 void ui_terminal_resized(void);
 void render_all_lines(LineList_t *lines);
 void refresh_all_lines(LineList_t *lines);
+void init_echo_bar(void);
 
 bool window_too_small(void) {
 
@@ -454,6 +455,18 @@ void init_main_screen(void) {
   scrn->current_line_index = 0;
 }
 
+/* Initialises the echo bar */
+void init_echo_bar(void) {
+
+  size_t startX = scrn->dimen.x - PADDING_X - 1;
+  size_t yVal = scrn->dimen.y - 1;
+  scrn->echo_bar = newwin(1, startX, yVal, PADDING_X);
+  wattron(scrn->echo_bar, A_DIM | A_BOLD | COLOR_PAIR(1));
+
+  wprintw(scrn->echo_bar, "Totui successfully loaded!");
+  wrefresh(scrn->echo_bar);
+}
+
 /* Called when the program starts
  * Initialises the screen and sets some ncurses options whilst also passing the
  * LineList to get drawn  */
@@ -477,7 +490,10 @@ Screen_t *ui_init(LineList_t *lines) {
 
   // Set up lines linked list
   render_all_lines(lines);
+
   ui_hl_update(scrn->lines->current_line, NULL);
+
+  init_echo_bar();
 
   return scrn;
 }
