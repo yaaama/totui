@@ -37,7 +37,7 @@ bool window_too_small(void) {
   DEBUG("Window size is currently %zu x %zu", scrn->dimen.x, scrn->dimen.y);
 
   if (scrn->dimen.x < MAX_TODO_LEN) {
-    DEBUG("This window is too small!");
+    DEBUG("%s", "This window is too small!");
     return true;
   }
 
@@ -92,10 +92,10 @@ void display_warning(ERROR_T error) {
 void ui_terminal_resized(void) {
 
   getmaxyx(scrn->main, scrn->dimen.y, scrn->dimen.x);
-  DEBUG("Terminal has been resized.");
+  DEBUG("%s", "Terminal has been resized.");
 
   if (scrn->dimen.x < MAX_TODO_LEN) {
-    DEBUG("Terminal is too small...");
+    DEBUG("%s", "Terminal is too small...");
     display_warning(err_term_small);
   }
 
@@ -212,7 +212,7 @@ void ui_mv_cursor(MOVEMENT_TYPE_e go) {
 
   /* Cant move a cursor if there are no lines. */
   if (scrn->lines->size == 0) {
-    DEBUG("--> Screen empty, movement is impossible.");
+    DEBUG("%s", "--> Screen empty, movement is impossible.");
     return;
   }
 
@@ -290,7 +290,7 @@ void ui_refresh(void) {
 
   // Why bother refreshing an empty screen?
   if (scrn->lines->size == 0) {
-    DEBUG("No lines to refresh, returning...");
+    DEBUG("%s", "No lines to refresh, returning...");
     return;
   }
 
@@ -361,7 +361,7 @@ void linelist_add_item(TodoItem_t *item) {
   Line_t *newLine = malloc(sizeof(Line_t));
   newLine->item = item;
   if (!newLine) {
-    DEBUG("Malloc failed...");
+    DEBUG("%s", "Malloc failed...");
     return;
   }
   newLine->next = NULL;

@@ -272,7 +272,7 @@ char *handle_no_status(char *str) {
   char *stat = status_enum_to_string(e_status_none);
 
   strncat(appendedStr, stat, strlen(stat));
-  strncat(appendedStr, " ", 1);
+  strncat(appendedStr, " ", 2);
   strncat(appendedStr, str, MAX_TODO_LEN - strlen(stat) - 2);
 
   strncpy(str, appendedStr, MAX_TODO_LEN - 1);
@@ -385,7 +385,7 @@ TODO_STATUS_e parse_todo_status(char *str) {
 /* Prints all the strings for each todo item stored in the linked list  */
 void print_all_todo_items(LineList_t *line_list) {
 
-  DEBUG("--> Printing all stored todo items in LineList");
+  DEBUG("%s", "--> Printing all stored todo items in LineList");
 
   if (!line_list->head) {
     DEBUG("%s", "List empty!");
