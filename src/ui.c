@@ -24,7 +24,7 @@ void line_wprint(Line_t *line);
 void line_refresh(Line_t *line);
 void draw_mainscrn_box(WINDOW *window);
 void ui_terminal_resized(void);
-void render_all_lines(LineList_t *lines);
+int render_all_lines(LineList_t *lines);
 void refresh_all_lines(LineList_t *lines);
 void init_echo_bar(void);
 
@@ -419,7 +419,7 @@ void line_render(Line_t *line, size_t row) {
 
 /* Called by ui_init_screen
  * Takes in a LineList_t and renders all of the Lines. */
-void render_all_lines(LineList_t *list) {
+int render_all_lines(LineList_t *list) {
 
   assert(list != NULL && "This list of lines is NULL");
 
@@ -436,6 +436,8 @@ void render_all_lines(LineList_t *list) {
   }
   list->current_line = list->head;
   scrn->lines = list;
+
+  return i;
 }
 
 void draw_mainscrn_box(WINDOW *window) { box(window, ACS_VLINE, ACS_HLINE); }
@@ -489,9 +491,12 @@ Screen_t *ui_init(LineList_t *lines) {
   init_main_screen();
 
   // Set up lines linked list
-  render_all_lines(lines);
+  int loaded = render_all_lines(lines);
 
-  ui_hl_update(scrn->lines->current_line, NULL);
+  // If file is not empty then we should highlight the first line.
+  if (loaded > 0) {
+    ui_hl_update(scrn->lines->current_line, NULL);
+  }
 
   init_echo_bar();
 

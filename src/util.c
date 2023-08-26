@@ -105,7 +105,7 @@ LineList_t *load_todo_file(char *fn) {
 
   assert(fn != NULL && "File name was NULL!");
 
-  FILE *fp = fopen(fn, "r");
+  FILE *fp = fopen(fn, "a+");
   assert(fp != NULL && "File could not be opened for whatever reason.");
 
   todo_file_name = fn; /* Initialising the global filename var */
