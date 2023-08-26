@@ -127,11 +127,11 @@ void delete_todo_item(void) {
 
   int no =
       dialog_yesno("Deleting todo item!", "Do you really want to delete this?",
-                   scrn->dimen.y / 4, scrn->dimen.x / 2);
+                   scrn->dimen.y / 2, scrn->dimen.x / 2);
 
   if (no) { /* User no longer wants to delete the item */
     /* Clear up the screen and refresh it */
-    end_dialog();
+    /* end_dialog(); */
     refresh();
     ui_refresh();
     echo_to_user("Deletion cancelled...");
@@ -150,12 +150,12 @@ void delete_todo_item(void) {
   if (scrn_lines_empty()) {
     /* TODO Handle what happens when the screen is empty */
     /* ui_empty_todolist(); */
-    end_dialog();
+    /* end_dialog(); */
     refresh();
     ui_refresh();
     return;
   }
-  end_dialog();
+  /* end_dialog(); */
   refresh();
   ui_refresh_delete(delY);
   ui_hl_update(scrn->lines->current_line, NULL);
@@ -167,22 +167,22 @@ void delete_todo_item(void) {
  * Displays a dialog window and asks what the todo item should be called */
 void add_new_todo(void) {
 
-  Dim_t dim = {COLS / 2, LINES / 2};
+  Dim_t dim = {scrn->dimen.x / 2, scrn->dimen.y / 2};
 
-  dialog_inputbox("New todo!", "Enter new item:", dim.y, dim.x, "", dim.y / 2);
   dialog_vars.dlg_clear_screen = true;
+  dialog_vars.timeout_secs = 100000;
+
+  int succ =
+      dialog_inputbox("New todo!", "Enter new item:", dim.y, dim.x, "", 0);
 
   char *inp = dialog_vars.input_result;
+  refresh();
 
-  end_dialog();
+  /* end_dialog(); */
 
   DEBUG("Input received: %s", inp);
-  if ((strlen(inp) == 0)) {
+  if ((strlen(inp) == 0 || (succ == DLG_EXIT_CANCEL))) {
 
-    DEBUG("%s", "Empty input received.");
-    /* Clear up the screen and refresh it */
-    /* dlg_clr_result(); */
-    /* dlg_clear(); */
     refresh();
     ui_refresh();
     echo_to_user("Adding new todo cancelled...");
@@ -280,7 +280,7 @@ int main(void) {
 
   setup_log_file(LOG_FILE);
 
-  ui_init(load_todo_file("example.txt"));
+  ui_init(load_todo_file("todo.txt"));
 
   todo_window_loop();
 
