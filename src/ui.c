@@ -24,8 +24,12 @@ void line_wprint(Line_t *line);
 void line_refresh(Line_t *line);
 void draw_mainscrn_box(WINDOW *window);
 void ui_terminal_resized(void);
-void render_all_lines(LineList_t *lines);
+int render_all_lines(LineList_t *lines);
 void refresh_all_lines(LineList_t *lines);
+void init_echo_bar(void);
+void echo_to_user(char *msg);
+void clear_echo_bar(void);
+void draw_echo_box(WINDOW *win);
 
 bool window_too_small(void) {
 
@@ -33,6 +37,7 @@ bool window_too_small(void) {
   DEBUG("Window size is currently %zu x %zu", scrn->dimen.x, scrn->dimen.y);
 
   if (scrn->dimen.x < MAX_TODO_LEN) {
+    DEBUG("%s", "This window is too small!");
     return true;
   }
 
@@ -42,8 +47,14 @@ bool window_too_small(void) {
 void display_window_too_small_err(void) {
 
   bool small = window_too_small();
+
+  char *errmsg = "Window is too small!";
+
+  size_t xval = getmaxx(scrn->main);
+  size_t centerX = (xval / 2) - (strlen(errmsg) / 2);
+
   erase();
-  mvwprintw(scrn->main, 1, 1, "Window is too small!");
+  mvwprintw(scrn->main, 1, centerX, "%s", errmsg);
 
   do {
 
@@ -81,10 +92,10 @@ void display_warning(ERROR_T error) {
 void ui_terminal_resized(void) {
 
   getmaxyx(scrn->main, scrn->dimen.y, scrn->dimen.x);
-  DEBUG("Terminal has been resized.");
+  DEBUG("%s", "Terminal has been resized.");
 
   if (scrn->dimen.x < MAX_TODO_LEN) {
-    DEBUG("Terminal is too small...");
+    DEBUG("%s", "Terminal is too small...");
     display_warning(err_term_small);
   }
 
@@ -98,6 +109,7 @@ void ui_terminal_resized(void) {
   refresh();
   /* render_all_lines(scrn->lines); */
   refresh_all_lines(scrn->lines);
+  echo_to_user("Terminal resized!");
 }
 
 bool scrn_lines_empty(void) {
@@ -129,18 +141,23 @@ void ui_destroy(void) {
     curr = next;
   }
 
-  delwin(scrn->main);
-  delwin(scrn->echo_bar);
-  delwin(scrn->help_bar);
+  if (scrn->main) {
+    delwin(scrn->main);
+  }
+
+  if (scrn->echo_bar) {
+    delwin(scrn->echo_bar);
+  }
+
+  if (scrn->help_bar) {
+    delwin(scrn->help_bar);
+  }
 
   free(scrn->lines);
   free(scrn);
 
-  /* endwin(); */
-  /* refresh(); */
   endwin();
-
-  /* exit_curses(0); */
+  refresh();
 }
 
 /* Will set the colours for ncurses to use
@@ -195,18 +212,20 @@ void ui_mv_cursor(MOVEMENT_TYPE_e go) {
 
   /* Cant move a cursor if there are no lines. */
   if (scrn->lines->size == 0) {
-    DEBUG("--> Screen empty, movement is impossible.");
+    DEBUG("%s", "--> Screen empty, movement is impossible.");
     return;
   }
 
   Line_t *mvHere = NULL;
   Line_t *currLine = scrn->lines->current_line;
 
-  /* If the current line is null for whatever reason, then the current line
+  /* If the current line is null for whatever reason, then scrn->current_line
    * should be replaced with the first line. */
   if (currLine == NULL) {
     scrn->lines->current_line = scrn->lines->head;
   }
+
+  clear_echo_bar();
 
   /* Switch case that evaluates the MOVEMENT_TYPE_t enum: */
   switch (go) {
@@ -271,7 +290,7 @@ void ui_refresh(void) {
 
   // Why bother refreshing an empty screen?
   if (scrn->lines->size == 0) {
-    DEBUG("No lines to refresh, returning...");
+    DEBUG("%s", "No lines to refresh, returning...");
     return;
   }
 
@@ -342,7 +361,7 @@ void linelist_add_item(TodoItem_t *item) {
   Line_t *newLine = malloc(sizeof(Line_t));
   newLine->item = item;
   if (!newLine) {
-    DEBUG("Malloc failed...");
+    DEBUG("%s", "Malloc failed...");
     return;
   }
   newLine->next = NULL;
@@ -418,7 +437,7 @@ void line_render(Line_t *line, size_t row) {
 
 /* Called by ui_init_screen
  * Takes in a LineList_t and renders all of the Lines. */
-void render_all_lines(LineList_t *list) {
+int render_all_lines(LineList_t *list) {
 
   assert(list != NULL && "This list of lines is NULL");
 
@@ -435,7 +454,11 @@ void render_all_lines(LineList_t *list) {
   }
   list->current_line = list->head;
   scrn->lines = list;
+
+  return i;
 }
+
+void clear_up_terminal_window(void) {}
 
 void draw_mainscrn_box(WINDOW *window) { box(window, ACS_VLINE, ACS_HLINE); }
 
@@ -450,8 +473,63 @@ void init_main_screen(void) {
   // Draws a box
   draw_mainscrn_box(scrn->main);
 
+  if (window_too_small()) {
+    char *errmsg = "Please restart Totui using a larger terminal window!";
+    delwin(scrn->main);
+    endwin();
+    refresh();
+
+    printf("\n------");
+    printf("\n\nERROR!!\n%s\n", errmsg);
+    printf("\n------\n");
+
+    exit(1);
+  }
+
   wrefresh(scrn->main);
   scrn->current_line_index = 0;
+}
+
+void draw_echo_box(WINDOW *win) { box(win, 0, 0); }
+
+void clear_echo_bar(void) {
+
+  werase(scrn->echo_bar);
+  draw_echo_box(scrn->echo_bar);
+
+  wrefresh(scrn->echo_bar);
+}
+
+/* Initialises the echo bar */
+void init_echo_bar(void) {
+
+  size_t startX = scrn->dimen.x;
+  size_t yVal = scrn->dimen.y - 3;
+  char *loadstatus = "Totui has succesfully loaded!";
+  size_t lsSize = strlen(loadstatus);
+  // To center the initial load up message
+  size_t centerX = (scrn->dimen.x / 2) - (lsSize / 2);
+
+  scrn->echo_bar = newwin(3, startX, yVal, 0);
+  draw_echo_box(scrn->echo_bar);
+  wattron(scrn->echo_bar, A_DIM | A_BOLD | COLOR_PAIR(1));
+  mvwprintw(scrn->echo_bar, 1, centerX, "%s", loadstatus);
+  wattroff(scrn->echo_bar, A_DIM | A_BOLD | COLOR_PAIR(1));
+
+  wrefresh(scrn->echo_bar);
+}
+
+void echo_to_user(char *msg) {
+
+  size_t msgLen = strlen(msg);
+  size_t centerX = (scrn->dimen.x / 2) - (msgLen / 2);
+
+  werase(scrn->echo_bar);
+  wattron(scrn->echo_bar, A_DIM | A_BOLD | COLOR_PAIR(1));
+  mvwprintw(scrn->echo_bar, 1, centerX, "%s", msg);
+  wattroff(scrn->echo_bar, A_DIM | A_BOLD | COLOR_PAIR(1));
+  draw_echo_box(scrn->echo_bar);
+  wrefresh(scrn->echo_bar);
 }
 
 /* Called when the program starts
@@ -476,8 +554,14 @@ Screen_t *ui_init(LineList_t *lines) {
   init_main_screen();
 
   // Set up lines linked list
-  render_all_lines(lines);
-  ui_hl_update(scrn->lines->current_line, NULL);
+  int loaded = render_all_lines(lines);
+
+  // If file is not empty then we should highlight the first line.
+  if (loaded > 0) {
+    ui_hl_update(scrn->lines->current_line, NULL);
+  }
+
+  init_echo_bar();
 
   return scrn;
 }

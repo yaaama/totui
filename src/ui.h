@@ -113,6 +113,7 @@ void ui_remove_line(void);
 void ui_refresh_delete(size_t delWinY);
 void ui_empty_todolist(void);
 void ui_terminal_resized(void);
+void echo_to_user(char *msg);
 
 /***************************/
 /* /\* Utility methods *\/ */

@@ -105,7 +105,7 @@ LineList_t *load_todo_file(char *fn) {
 
   assert(fn != NULL && "File name was NULL!");
 
-  FILE *fp = fopen(fn, "r");
+  FILE *fp = fopen(fn, "a+");
   assert(fp != NULL && "File could not be opened for whatever reason.");
 
   todo_file_name = fn; /* Initialising the global filename var */
@@ -272,7 +272,7 @@ char *handle_no_status(char *str) {
   char *stat = status_enum_to_string(e_status_none);
 
   strncat(appendedStr, stat, strlen(stat));
-  strncat(appendedStr, " ", 1);
+  strncat(appendedStr, " ", 2);
   strncat(appendedStr, str, MAX_TODO_LEN - strlen(stat) - 2);
 
   strncpy(str, appendedStr, MAX_TODO_LEN - 1);
@@ -385,7 +385,7 @@ TODO_STATUS_e parse_todo_status(char *str) {
 /* Prints all the strings for each todo item stored in the linked list  */
 void print_all_todo_items(LineList_t *line_list) {
 
-  DEBUG("--> Printing all stored todo items in LineList");
+  DEBUG("%s", "--> Printing all stored todo items in LineList");
 
   if (!line_list->head) {
     DEBUG("%s", "List empty!");
