@@ -54,15 +54,19 @@ void todo_window_loop(void) {
     }
       // Add new item
     case 'a': {
+      curs_set(1);
       DEBUG("%s", "User wants to add a new todo item...");
       add_new_todo();
+      curs_set(0);
 
       break;
     }
       // Remove item
     case 'd': {
       /* Delete todo */
+      curs_set(1);
       delete_todo_item();
+      curs_set(0);
       break;
     }
       // Movement keys:
@@ -109,6 +113,8 @@ void toggle_todo_curr_item(void) {
   DEBUG("Row val: %zu", scrn->current_line_index + 1);
   line_render(scrn->lines->current_line, scrn->current_line_index + 1);
   ui_hl_update(scrn->lines->current_line, NULL);
+
+  echo_to_user("Checkbox toggled!");
 }
 
 /* Entry point for deletion
@@ -119,15 +125,16 @@ void delete_todo_item(void) {
     return;
   }
 
-  int yn =
+  int no =
       dialog_yesno("Deleting todo item!", "Do you really want to delete this?",
-                   LINES / 2, COLS / 2);
+                   scrn->dimen.y / 4, scrn->dimen.x / 2);
 
-  if (yn) { /* User no longer wants to delete the item */
+  if (no) { /* User no longer wants to delete the item */
     /* Clear up the screen and refresh it */
     end_dialog();
     refresh();
     ui_refresh();
+    echo_to_user("Deletion cancelled...");
     return;
   }
 
@@ -152,6 +159,8 @@ void delete_todo_item(void) {
   refresh();
   ui_refresh_delete(delY);
   ui_hl_update(scrn->lines->current_line, NULL);
+
+  echo_to_user("Todo deleted!");
 }
 
 /* Entry point for adding a new todo item
@@ -160,10 +169,11 @@ void add_new_todo(void) {
 
   Dim_t dim = {COLS / 2, LINES / 2};
 
-  dialog_inputbox("New todo!", "Enter new item:", dim.y, dim.x, "", 0);
+  dialog_inputbox("New todo!", "Enter new item:", dim.y, dim.x, "", dim.y / 2);
   dialog_vars.dlg_clear_screen = true;
 
   char *inp = dialog_vars.input_result;
+
   end_dialog();
 
   DEBUG("Input received: %s", inp);
@@ -175,6 +185,7 @@ void add_new_todo(void) {
     /* dlg_clear(); */
     refresh();
     ui_refresh();
+    echo_to_user("Adding new todo cancelled...");
     return;
   }
 
@@ -202,8 +213,8 @@ void add_new_todo(void) {
   /* Render this new line */
   line_render(scrn->lines->tail, scrn->lines->size);
 
-  /* refresh(); */
   ui_refresh();
+  echo_to_user("New todo item added!");
 
   dlg_clr_result();
 
