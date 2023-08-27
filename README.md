@@ -53,6 +53,9 @@ The keybindings are simple. They are inspired by **vim** keys.
 
 # Things to do (no pun intended)
 
+Please note that I have basically done what I wanted to do and may stop updating this project as often as I have been.
+I was mostly using this project as a reason for me to learn how `ncurses` works.
+
 
 <a id="orga7d1a27"></a>
 
