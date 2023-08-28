@@ -54,10 +54,10 @@ void append_to_file(char *filename,
 void print_all_todo_items(
     LineList_t
         *line_list); /* Prints all of the todo items stored in the LineList */
-TODO_STATUS_e parse_todo_status(char *str);
-char *status_enum_to_string(TODO_STATUS_e status);
-char *convert_status_to_box(TODO_STATUS_e status);
-void cut_tag_from_line_string(char *str, TODO_STATUS_e status);
+todo_status_e parse_todo_status(char *str);
+char *status_enum_to_string(todo_status_e status);
+char *convert_status_to_box(todo_status_e status);
+void cut_tag_from_line_string(char *str, todo_status_e status);
 void dump_state(LineList_t *list);
 
 #endif // UTIL_H_

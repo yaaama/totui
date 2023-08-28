@@ -97,9 +97,9 @@ void todo_window_loop(void) {
 void toggle_todo_curr_item(void) {
 
   DEBUG("%s", "--> Toggling todo...");
-  TODO_STATUS_e currStatus = scrn->lines->current_line->item->status;
-  /* TODO Change the str value of the todo item to reflect the change in status
-   */
+  todo_status_e currStatus = scrn->lines->current_line->item->status;
+  // REVIEW Change the str value of the todo item to reflect the change in
+  // status?
 
   if (currStatus == e_status_complete) {
     /* currStatus = e_status_incomplete; */

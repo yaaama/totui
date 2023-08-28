@@ -76,7 +76,7 @@ void display_window_too_small_err(void) {
   refresh_all_lines(scrn->lines);
 }
 
-void display_warning(ERROR_T error) {
+void display_warning(error_e error) {
 
   switch (error) {
 
@@ -208,7 +208,7 @@ void ui_empty_todolist(void) {
 }
 
 /* This function moves the cursor either up or down. */
-void ui_mv_cursor(MOVEMENT_TYPE_e go) {
+void ui_mv_cursor(movement_type_e go) {
 
   /* Cant move a cursor if there are no lines. */
   if (scrn->lines->size == 0) {

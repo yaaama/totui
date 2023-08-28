@@ -7,10 +7,10 @@ const char *get_local_time(void);
 void print_all_todo_items(LineList_t *line_list);
 void append_to_file(char *filename, char *str);
 char *strip_string(char *str);
-char *status_enum_to_string(TODO_STATUS_e status);
+char *status_enum_to_string(todo_status_e status);
 char *handle_no_status(char *str);
-void replace_tag_with_checkbox(char *str, TODO_STATUS_e status);
-void cut_tag_from_line_string(char *str, TODO_STATUS_e status);
+void replace_tag_with_checkbox(char *str, todo_status_e status);
+void cut_tag_from_line_string(char *str, todo_status_e status);
 void strip_ws(char *str, const size_t length);
 
 /************************************/
@@ -158,7 +158,7 @@ LineList_t *load_todo_file(char *fn) {
     DEBUG("-> 2 Formatted line: %s", fmtCurrLine);
 
     /* Figuring out what the status for the current line is */
-    TODO_STATUS_e status = parse_todo_status(fmtCurrLine);
+    todo_status_e status = parse_todo_status(fmtCurrLine);
 
     if (status == e_status_none) {
       handle_no_status(fmtCurrLine);
@@ -210,7 +210,7 @@ void dump_state_to_file(LineList_t *lines) {
 }
 
 /* This function will cut tag such as `T/ODO` or `DONE` from a string */
-void cut_tag_from_line_string(char *str, TODO_STATUS_e status) {
+void cut_tag_from_line_string(char *str, todo_status_e status) {
 
   char strBuild[MAX_TODO_LEN + 1] = {""};
 
@@ -314,7 +314,7 @@ void dump_state(LineList_t *lines) {
 }
 
 /* Will replace a string that contains a tag, with a checkbox instead.  */
-void replace_tag_with_checkbox(char *str, TODO_STATUS_e status) {
+void replace_tag_with_checkbox(char *str, todo_status_e status) {
 
   char boxedLine[MAX_TODO_LEN] = "";
   char *box = convert_status_to_box(status);
@@ -332,7 +332,7 @@ void replace_tag_with_checkbox(char *str, TODO_STATUS_e status) {
 
 /* Takes a Status enum and then returns a string literal that associates with it
  */
-char *status_enum_to_string(TODO_STATUS_e status) {
+char *status_enum_to_string(todo_status_e status) {
 
   switch (status) {
   case e_status_complete:
@@ -347,7 +347,7 @@ char *status_enum_to_string(TODO_STATUS_e status) {
 }
 
 /* Returns a checkbox for the specified status */
-char *convert_status_to_box(TODO_STATUS_e status) {
+char *convert_status_to_box(todo_status_e status) {
 
   switch (status) {
   case e_status_complete:
@@ -362,7 +362,7 @@ char *convert_status_to_box(TODO_STATUS_e status) {
 }
 
 /* Takes a string and determines if the line is done or not */
-TODO_STATUS_e parse_todo_status(char *str) {
+todo_status_e parse_todo_status(char *str) {
 
   DEBUG("%s %s", "---> Parsing the todo status of line:", str);
   /* List of things to look for */

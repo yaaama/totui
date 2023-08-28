@@ -26,36 +26,36 @@
 /* /\* Type definitions *\/ */
 /****************************/
 
-typedef enum ERROR_T {
+typedef enum error {
   err_term_small,
   err_no_items,
-} ERROR_T;
+} error_e;
 
 /* Used to describe what action is being taken
   NOTE: Not yet implemented */
-typedef enum ACTION_TYPE {
+typedef enum action_type {
   e_cmd_add_item,
   e_cmd_remove_item,
   e_cmd_toggle_item,
   e_cmd_move_cursor
-} ACTION_TYPE_e;
+} action_type_e;
 
 /* Type of movement of the cursor */
-typedef enum MOVEMENT_TYPE { e_mv_down, e_mv_up } MOVEMENT_TYPE_e;
+typedef enum movement_type { e_mv_down, e_mv_up } movement_type_e;
 
 /* Todo status */
-typedef enum TODO_STATUS {
+typedef enum todo_status {
   e_status_complete,
   e_status_incomplete,
   e_status_none,
   /* NOTE: Add more statuses later down the line. */
-} TODO_STATUS_e;
+} todo_status_e;
 
 /* Structure of a todo item */
 typedef struct TodoItem {
   size_t length;              /* Length of the line */
   char str[MAX_TODO_LEN + 1]; /* Todo contents */
-  TODO_STATUS_e status;       /* Status of the todo item */
+  todo_status_e status;       /* Status of the todo item */
 
 } TodoItem_t;
 
@@ -104,7 +104,7 @@ Screen_t *ui_init(LineList_t *ls);
 void linelist_destroy(LineList_t *list);
 void ui_hl_update(Line_t *new, Line_t *old);
 void ui_destroy(void);
-void ui_mv_cursor(MOVEMENT_TYPE_e go);
+void ui_mv_cursor(movement_type_e go);
 int createForm(void);
 void ui_refresh(void);
 void line_render(Line_t *line, size_t row);
