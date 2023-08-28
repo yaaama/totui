@@ -5,6 +5,8 @@
 /* /\* Imports and Macros: *\/ */
 /******************************/
 
+#define NDEBUG
+
 /* My headers */
 #include "ui.h"
 /* Libraries */
