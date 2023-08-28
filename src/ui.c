@@ -31,6 +31,7 @@ void echo_to_user(char *msg);
 void clear_echo_bar(void);
 void draw_echo_box(WINDOW *win);
 
+/* Function to check if the terminal window is too small */
 bool window_too_small(void) {
 
   getmaxyx(scrn->main, scrn->dimen.y, scrn->dimen.x);
@@ -44,6 +45,7 @@ bool window_too_small(void) {
   return false;
 }
 
+/* Displays a warning to the user saying terminal is too small */
 void display_window_too_small_err(void) {
 
   bool small = window_too_small();
@@ -76,6 +78,7 @@ void display_window_too_small_err(void) {
   refresh_all_lines(scrn->lines);
 }
 
+/* Proc to handle errors in the program */
 void display_warning(error_e error) {
 
   switch (error) {
@@ -99,7 +102,6 @@ void ui_terminal_resized(void) {
     display_warning(err_term_small);
   }
 
-  /* endwin(); */
   werase(scrn->main);
 
   wresize(scrn->main, scrn->dimen.y, scrn->dimen.x);
@@ -107,11 +109,11 @@ void ui_terminal_resized(void) {
   draw_mainscrn_box(scrn->main);
 
   refresh();
-  /* render_all_lines(scrn->lines); */
   refresh_all_lines(scrn->lines);
   echo_to_user("Terminal resized!");
 }
 
+/* Func to check if there are any lines left in the screen */
 bool scrn_lines_empty(void) {
 
   DEBUG("%s", "Testing if scrn->lines is empty.");
@@ -202,7 +204,8 @@ void ui_hl_update(Line_t *new, Line_t *old) {
   wattroff(new->window, ATTR_CURR_LINE);
 }
 
-/* TODO Will display a popup for the user when the window is empty */
+/* Will display a popup for the user when the window is empty */
+// TODO Implement this
 void ui_empty_todolist(void) {
   assert(false && "Implement a popup to tell the user that the menu is empty.");
 }
@@ -266,6 +269,7 @@ void ui_mv_cursor(movement_type_e go) {
                currLine); /* Updating the highlighting */
 }
 
+// NOTE Unused
 void ui_resized(void) {
 
   size_t maxY, maxX;
@@ -381,6 +385,7 @@ void linelist_add_item(TodoItem_t *item) {
   }
 }
 
+/* Refreshes a singular line */
 void line_refresh(Line_t *line) {
   werase(line->window);
   wmove(line->window, 0, PADDING_X);
@@ -388,6 +393,7 @@ void line_refresh(Line_t *line) {
   wrefresh(line->window);
 }
 
+/* Refreshes all lines on the screen */
 void refresh_all_lines(LineList_t *lines) {
 
   Line_t *curr = lines->head;
@@ -405,6 +411,7 @@ void refresh_all_lines(LineList_t *lines) {
 }
 
 /* Returns current dimensions of the main screen */
+// NOTE Unused function curr_dim
 Dim_t curr_dim(void) {
   Dim_t dim;
   getmaxyx(scrn->main, dim.y, dim.x);
@@ -429,7 +436,7 @@ void line_render(Line_t *line, size_t row) {
 
   } else if (line->item->status == e_status_incomplete) {
     /* NOTE: We can add highlighting here if we want to later on. */
-    /* wattron(line->window, ATTR_TODO); */
+    /* wattron(line->window, attributes); */
   }
 
   line_refresh(line);
@@ -458,8 +465,7 @@ int render_all_lines(LineList_t *list) {
   return i;
 }
 
-void clear_up_terminal_window(void) {}
-
+/* Draws a box in the style of the mainscreen box for a window */
 void draw_mainscrn_box(WINDOW *window) { box(window, ACS_VLINE, ACS_HLINE); }
 
 /* Draws up the main window stored in scrn->main */

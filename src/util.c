@@ -261,7 +261,7 @@ void strip_ws(char *str, const size_t length) {
   strncpy(str, stripped, length - 1);
 }
 
-/* Function that takes a string without a status and then prepends :TODO: to it.
+/* Function that takes a string without a status and then prepends :todo: to it.
  */
 char *handle_no_status(char *str) {
 

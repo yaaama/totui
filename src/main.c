@@ -5,14 +5,11 @@
 /*********************************/
 /* /\* Function declarations *\/ */
 /*********************************/
-// UI Integrated (may refactor)
+// UI stuff (may refactor)
 void add_new_todo(void);
 void toggle_todo_curr_item(void);
 void delete_todo_item(void);
 
-void init_todo_from_file(char *file);
-/* void init_display_items_todo_window(void); */
-/* void handle_key_event(char key); */
 // Main logic
 void todo_window_loop(void);
 void linelist_remove_item(LineList_t *list, Line_t *node);
@@ -53,6 +50,7 @@ void todo_window_loop(void) {
     }
       // Add new item
     case 'a': {
+      // Changes cursor back to visible
       curs_set(1);
       DEBUG("%s", "User wants to add a new todo item...");
       add_new_todo();
@@ -62,7 +60,6 @@ void todo_window_loop(void) {
     }
       // Remove item
     case 'd': {
-      /* Delete todo */
       curs_set(1);
       delete_todo_item();
       curs_set(0);
@@ -101,15 +98,15 @@ void toggle_todo_curr_item(void) {
   // REVIEW Change the str value of the todo item to reflect the change in
   // status?
 
+  // Swapping statuses for the todo box
   if (currStatus == e_status_complete) {
-    /* currStatus = e_status_incomplete; */
     scrn->lines->current_line->item->status = e_status_incomplete;
 
   } else {
-    /* *currStatus = e_status_complete; */
     scrn->lines->current_line->item->status = e_status_complete;
   }
 
+  // Rerendering the line after status change
   DEBUG("Row val: %zu", scrn->current_line_index + 1);
   line_render(scrn->lines->current_line, scrn->current_line_index + 1);
   ui_hl_update(scrn->lines->current_line, NULL);
@@ -121,17 +118,18 @@ void toggle_todo_curr_item(void) {
  * Displays a dialog window and asks if user really wants to delete item */
 void delete_todo_item(void) {
 
+  // If screen is empty then there is nothing to delete
   if (scrn_lines_empty()) {
     return;
   }
 
+  // The val returned from dialog_yesno is non-zero when user selects NO
   int no =
       dialog_yesno("Deleting todo item!", "Do you really want to delete this?",
                    scrn->dimen.y / 2, scrn->dimen.x / 2);
 
-  if (no) { /* User no longer wants to delete the item */
+  if (no) { // User no longer wants to delete the item
     /* Clear up the screen and refresh it */
-    /* end_dialog(); */
     refresh();
     ui_refresh();
     echo_to_user("Deletion cancelled...");
@@ -178,8 +176,6 @@ void add_new_todo(void) {
   char *inp = dialog_vars.input_result;
   refresh();
 
-  /* end_dialog(); */
-
   DEBUG("Input received: %s", inp);
   if ((strlen(inp) == 0 || (succ == DLG_EXIT_CANCEL))) {
 
@@ -219,7 +215,6 @@ void add_new_todo(void) {
   dlg_clr_result();
 
   free(dialog_vars.input_result);
-  /* dlg_clear(); */
 }
 
 /* Delete a node from the list */
@@ -248,7 +243,7 @@ void linelist_remove_item(LineList_t *list, Line_t *node) {
   list->current_line = newCurr;
 }
 
-/* Find a node by todo string */
+/* Find a todo item in the list by string */
 Line_t *linelist_find_item(LineList_t *list, char *str) {
   Line_t *curr = list->head;
   while (curr) {
@@ -263,8 +258,7 @@ Line_t *linelist_find_item(LineList_t *list, char *str) {
 /* Destroys the linked list.
  * This is only called BEFORE any of the list items have a window attached.
  * If there is a window in the list item, then you will have to call a destroy
- * function for the entirety of the ui (func located in the ui file somewhere,
- * it is easy to find) */
+ * function for the entirety of the ui (ui.c/ui_destroy) */
 void linelist_destroy(LineList_t *list) {
   Line_t *curr = list->head;
   while (curr) {
@@ -274,8 +268,7 @@ void linelist_destroy(LineList_t *list) {
   }
 }
 
-/* Main method that drives the entire program
-  TODO Make this parse arguments at a later date */
+/* Main method that drives the entire program */
 int main(void) {
 
   setup_log_file(LOG_FILE);
