@@ -87,11 +87,24 @@ void display_warning(error_e error) {
     display_window_too_small_err();
     break;
   }
+  case err_startup_term_small: {
+    char *errmsg = "Please restart Totui using a larger terminal window!";
+    delwin(scrn->main);
+    endwin();
+    refresh();
+
+    printf("\n------");
+    printf("\n\nERROR!!\n%s\n", errmsg);
+    printf("\n------\n");
+
+    exit(1);
+  }
   case err_no_items:
     break;
   }
 }
 
+/* Proc to resize the ncurses screen when terminal is resized */
 void ui_terminal_resized(void) {
 
   getmaxyx(scrn->main, scrn->dimen.y, scrn->dimen.x);
@@ -474,30 +487,25 @@ void init_main_screen(void) {
   ui_init_colours();
   DEBUG("Initialising scrn->main with dimensions: [%zu x %zu]", scrn->dimen.x,
         scrn->dimen.y);
-  /* TODO Initialise echo bar and help bar */
+  /* TODO Initialise Help bar */
 
   // Draws a box
   draw_mainscrn_box(scrn->main);
 
+  // If the terminal is too small on start up, then we should exit and print an
+  // error to the terminal
   if (window_too_small()) {
-    char *errmsg = "Please restart Totui using a larger terminal window!";
-    delwin(scrn->main);
-    endwin();
-    refresh();
-
-    printf("\n------");
-    printf("\n\nERROR!!\n%s\n", errmsg);
-    printf("\n------\n");
-
-    exit(1);
+    display_warning(err_startup_term_small);
   }
 
   wrefresh(scrn->main);
   scrn->current_line_index = 0;
 }
 
+/* Draws a box in the style of an echo bar box */
 void draw_echo_box(WINDOW *win) { box(win, 0, 0); }
 
+/* Clears the echo bar */
 void clear_echo_bar(void) {
 
   werase(scrn->echo_bar);
@@ -525,6 +533,7 @@ void init_echo_bar(void) {
   wrefresh(scrn->echo_bar);
 }
 
+/* Proc to send a message to the user through the echo bar */
 void echo_to_user(char *msg) {
 
   size_t msgLen = strlen(msg);
