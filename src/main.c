@@ -40,8 +40,7 @@ void todo_window_loop(void) {
       // Quit program
     case 'q' | 'Q': {
       DEBUG("---> User pressed '%c', quiting...", key);
-      // TODO Uncomment this
-      /* dump_state(scrn->lines); */
+      dump_state(scrn->lines);
       ui_destroy();
 
       exit(0);
@@ -89,6 +88,7 @@ void todo_window_loop(void) {
     default:
       // TODO Handle when a non recognised key is pressed
       // nonkey_pressed(key);
+
       break;
     }
   }

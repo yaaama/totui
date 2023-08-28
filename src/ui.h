@@ -78,7 +78,7 @@ typedef struct LineList {
 
 } LineList_t;
 
-/* TODO Dimensions, not yet used */
+/* Vector to store dimension sizes */
 typedef struct Dim {
   size_t x;
   size_t y;
