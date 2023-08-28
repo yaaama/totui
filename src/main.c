@@ -148,12 +148,12 @@ void delete_todo_item(void) {
   if (scrn_lines_empty()) {
     /* TODO Handle what happens when the screen is empty */
     /* ui_empty_todolist(); */
-    /* end_dialog(); */
+    end_dialog();
+    werase(scrn->main);
     refresh();
     ui_refresh();
     return;
   }
-  /* end_dialog(); */
   refresh();
   ui_refresh_delete(delY);
   ui_hl_update(scrn->lines->current_line, NULL);
