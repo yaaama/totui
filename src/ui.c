@@ -55,7 +55,7 @@ void display_window_too_small_err(void) {
   size_t xval = getmaxx(scrn->main);
   size_t centerX = (xval / 2) - (strlen(errmsg) / 2);
 
-  erase();
+  werase(scrn->main);
   mvwprintw(scrn->main, 1, centerX, "%s", errmsg);
 
   do {
@@ -71,9 +71,9 @@ void display_window_too_small_err(void) {
     }
 
   } while (small == true);
-  erase();
+  werase(scrn->main);
 
-  refresh();
+  wrefresh(scrn->main);
   draw_mainscrn_box(scrn->main);
   refresh_all_lines(scrn->lines);
 }
@@ -116,13 +116,13 @@ void ui_terminal_resized(void) {
   }
 
   werase(scrn->main);
-
   wresize(scrn->main, scrn->dimen.y, scrn->dimen.x);
-
   draw_mainscrn_box(scrn->main);
+  wrefresh(scrn->main);
 
-  refresh();
-  refresh_all_lines(scrn->lines);
+  if (!scrn_lines_empty()) {
+    refresh_all_lines(scrn->lines);
+  }
   echo_to_user("Terminal resized!");
 }
 
@@ -131,6 +131,10 @@ bool scrn_lines_empty(void) {
 
   DEBUG("%s", "Testing if scrn->lines is empty.");
 
+  if (scrn->lines == NULL) {
+    DEBUG("%s", "Screen was initialised without any lines!");
+    return true;
+  }
   if (scrn->lines->size == 0) {
     DEBUG("%s", "scrn->lines->size = 0.");
     return true;
@@ -189,7 +193,9 @@ void ui_init_colours(void) {
 
 /* Clears the window and then prints to the window in the line struct*/
 void line_wprint(Line_t *line) {
-
+  if (scrn_lines_empty() || (line == NULL)) {
+    return;
+  }
   assert(line != NULL && "Line is NULL.");
   char *statStr = convert_status_to_box(line->item->status);
   werase(line->window);
@@ -202,6 +208,9 @@ void line_wprint(Line_t *line) {
  * The highlighting displays to the user which line they are on. */
 void ui_hl_update(Line_t *new, Line_t *old) {
 
+  if (scrn_lines_empty()) {
+    return;
+  }
   /* If there is an old line to remove highlighting from... */
   if (old) {
     wattroff(old->window, ATTR_CURR_LINE);
@@ -227,7 +236,7 @@ void ui_empty_todolist(void) {
 void ui_mv_cursor(movement_type_e go) {
 
   /* Cant move a cursor if there are no lines. */
-  if (scrn->lines->size == 0) {
+  if (scrn_lines_empty()) {
     DEBUG("%s", "--> Screen empty, movement is impossible.");
     return;
   }
@@ -299,14 +308,12 @@ void ui_resized(void) {
 /* ui_refresh refreshes the screen. */
 void ui_refresh(void) {
 
-  // TODO Add resize handling here.
-  ui_resized();
-  /* if (is_term_resized(int, int)) { */
-  /*   ui_resized(); */
-  /* } */
+  werase(scrn->main);
+  draw_mainscrn_box(scrn->main);
+  wrefresh(scrn->main);
 
   // Why bother refreshing an empty screen?
-  if (scrn->lines->size == 0) {
+  if (scrn_lines_empty()) {
     DEBUG("%s", "No lines to refresh, returning...");
     return;
   }
@@ -317,10 +324,6 @@ void ui_refresh(void) {
   }
 
   DEBUG("Refreshing all %zu lines!", scrn->lines->size);
-
-  werase(scrn->main);
-  draw_mainscrn_box(scrn->main);
-  wrefresh(scrn->main);
 
   // Start refreshing from the start (the head) of the list
   Line_t *curr = scrn->lines->head;
@@ -400,6 +403,9 @@ void linelist_add_item(TodoItem_t *item) {
 
 /* Refreshes a singular line */
 void line_refresh(Line_t *line) {
+  if (scrn_lines_empty()) {
+    return;
+  }
   werase(line->window);
   wmove(line->window, 0, PADDING_X);
   line_wprint(line);
@@ -408,6 +414,10 @@ void line_refresh(Line_t *line) {
 
 /* Refreshes all lines on the screen */
 void refresh_all_lines(LineList_t *lines) {
+
+  if (scrn_lines_empty()) {
+    return;
+  }
 
   Line_t *curr = lines->head;
 
