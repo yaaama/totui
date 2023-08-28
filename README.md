@@ -21,13 +21,13 @@ Totui is a terminal todo list manager. The name *Totui* is from the words &ldquo
 
 ## Building
 
-You can
+You can:
 
-1.  Clone the repo: `git clone --depth 1 https://github.com/yaaama/totui`
+1.  Clone the repo: `git clone https://github.com/yaaama/totui`
 2.  Go into the cloned folder: `cd totui`
 3.  Create a build directory: `mkdir build`
-4.  Make the project: `make`
-5.  There should be an executable inside the `build` folder now. `cd` into that that folder (`cd build`).
+4.  Make the project: `make install`
+5.  There should be an executable inside your current working directory called *totui*.
 6.  Run the program: `./totui`.
 
 
