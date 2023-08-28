@@ -29,6 +29,7 @@
 typedef enum error {
   err_term_small,
   err_no_items,
+  err_startup_term_small,
 } error_e;
 
 /* Used to describe what action is being taken
