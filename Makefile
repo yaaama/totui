@@ -2,15 +2,19 @@
 # Totui
 #
 # @file
-# @version 0.1
+# @version 1.0
 
+# Source files
 SRCS = $(wildcard src/*.c)
 
-# specify your object files here
+# Object files
 OBJS = $(addprefix build/,$(notdir $(SRCS:.c=.o)))
 
-# specify your compiler flags here
-CFLAGS = -Wall -g3 -O0 -std=c11 -Wextra -pedantic -lncurses -flto=auto -lformw -lmenuw -ldialog -lncursesw -lm
+# Flags to use for development
+# CFLAGS = -Wall -g3 -O0 -std=c11 -Wextra -Wunused -pedantic -lncurses -flto=auto -lformw -lmenuw -ldialog -lncursesw -lm
+
+# CFLAGS to use for users
+CFLAGS = -Wall -std=c11 -Wextra -ldialog -lncursesw -lm
 
 # specify your compiler
 CC = gcc
@@ -18,21 +22,27 @@ CC = gcc
 # default target
 all: build/totui
 
+# Developer builds
 build/totui: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 build/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# a target to clean up your build directory
+
+# Cleans build directory
 clean:
 	rm -f build/*
 
-# a target to build the program
+# a target to build the program using bear (for dev use only)
 build: clean
 	bear -- make all
 
-# a target to run your program
+# Builds then moves the executable to the parent directory
+install: build/totui
+	mv ./build/totui ../totui
+
+# a target to run program
 run: build/totui
 	./build/totui
 
