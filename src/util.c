@@ -84,6 +84,11 @@ void append_to_file(char *filename, char *str) {
 
   assert(fp != NULL);
 
+  if (fp == NULL) {
+    DEBUG("%s", "Could not append to the file, it is NULL.");
+    return;
+  }
+
   fprintf(fp, "%s\n", str);
 
   assert(str != NULL);
@@ -107,6 +112,10 @@ LineList_t *load_todo_file(char *fn) {
 
   FILE *fp = fopen(fn, "a+");
   assert(fp != NULL && "File could not be opened for whatever reason.");
+
+  if (fp == NULL) {
+    return NULL;
+  }
 
   todo_file_name = fn; /* Initialising the global filename var */
 
@@ -136,15 +145,17 @@ LineList_t *load_todo_file(char *fn) {
     }
 
     Line_t *nl = malloc(sizeof(Line_t));
+
     TodoItem_t *item = malloc(sizeof(TodoItem_t));
-    nl->item = item;
     if (!nl) {
       fclose(fp);
       DEBUG("Error allocating a line. %s", "Returning NULL.");
+      free(item);
       linelist_destroy(retList);
       return NULL;
     }
 
+    nl->item = item;
     // Initialize the Line node
     nl->next = NULL;
     nl->previous = prev;
@@ -164,6 +175,7 @@ LineList_t *load_todo_file(char *fn) {
       handle_no_status(fmtCurrLine);
       status = e_status_incomplete;
     }
+
     nl->item->status = status; /* Setting the status */
 
     cut_tag_from_line_string(fmtCurrLine, nl->item->status);
@@ -286,6 +298,13 @@ char *handle_no_status(char *str) {
 void dump_state(LineList_t *lines) {
 
   FILE *file = fopen(todo_file_name, "w");
+
+  assert(file != NULL && "File is NULL");
+
+  if (file == NULL) {
+    DEBUG("%s", "Could not dump state because file was NULL");
+    return;
+  }
 
   Line_t *currLine = lines->head;
 

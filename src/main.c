@@ -266,6 +266,8 @@ void linelist_destroy(LineList_t *list) {
     free(curr);
     curr = next;
   }
+
+  free(list);
 }
 
 /* Main method that drives the entire program */

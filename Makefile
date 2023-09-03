@@ -11,10 +11,10 @@ SRCS = $(wildcard src/*.c)
 OBJS = $(addprefix build/,$(notdir $(SRCS:.c=.o)))
 
 # Flags to use for development
-# CFLAGS = -Wall -g3 -O0 -std=c11 -Wextra -Wunused -pedantic -lncurses -flto=auto -lformw -lmenuw -ldialog -lncursesw -lm
+CFLAGS = -Wall -g3 -O0 -std=c11 -Wextra -fanalyzer -Wunused -pedantic -lncurses -flto=auto -lformw -lmenuw -ldialog -lncursesw -lm
 
 # CFLAGS to use for users
-CFLAGS = -Wall -std=c11 -Wextra -ldialog -lncursesw -lm
+# CFLAGS = -Wall -std=c11 -Wextra -ldialog -lncursesw -lm
 
 # specify your compiler
 CC = gcc
